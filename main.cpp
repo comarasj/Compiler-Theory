@@ -10,9 +10,20 @@
 
 //Includes
 #include <iostream>
+#include <fstream>
+#include "scanner.cpp"
 using namespace std;
 
+
 int main() {
-    cout << "Hello World";
-    return 0;
+    fstream file1;
+    file1.open("text.txt", ios::in);
+
+    if( !file1 ) {
+        cout << "File does not exist" << endl;
+        return 0;
+    }
+
+    Scanner scanner( file1 );
+
 }
