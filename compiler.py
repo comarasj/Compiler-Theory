@@ -1,5 +1,11 @@
+# Stephen Comarata
+# EECE 5183 - 001 Compiler Theory 
+# This program is the driver program for the compiler project 
+#
+# compiler.py
 
-
+from scanner import Scanner
 
 if __name__ == '__main__':
-    print( 'hello world')
+    myscanner = Scanner( 'text.txt' )
+    myscanner.read()
