@@ -1,6 +1,6 @@
 
 import re
-from tokens import recognized_ops, Token
+from tokens import recognized_ops, Token, comment, comment_start, comment_end
 
 class Scanner:
     def __init__( self, input_file ):
