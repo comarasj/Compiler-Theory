@@ -8,4 +8,5 @@ from scanner import Scanner
 
 if __name__ == '__main__':
     myscanner = Scanner( 'text.txt' )
-    myscanner.read()
+    tokens = myscanner.read()
+    print( tokens )
