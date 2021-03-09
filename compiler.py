@@ -7,7 +7,7 @@ from myparser import Parser
 from scanner import Scanner
 
 if __name__ == '__main__':
-    myscanner = Scanner( 'text.txt' )
-    tokens = myscanner.read()
-    for i in tokens:
-        print( i.text )
+    scanner = Scanner( 'text.txt' )
+    tokens = iter( scanner.read() )
+    parser = Parser( tokens )
+    parser.parse()
