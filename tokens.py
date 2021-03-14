@@ -1,10 +1,10 @@
 
 
 class Token:
-    def __init__( self, name, text ):
+    def __init__( self, name, text, line_number=0 ):
         self.name = name
         self.text = text
-        self.line_number = 0
+        self.line_number = line_number
 
 
 keywords = [ 'program', 'is', 'begin', 'end', 'global', 'procedure', 
@@ -62,6 +62,52 @@ t_or = Token( 'or', '|' )
 t_period = Token( 'period', '.' )
 
 
-recognized_ops = [
-    
+keyword_tokens = [
+    t_program,
+    t_is,
+    t_begin,
+    t_end,
+    t_global,
+    t_procedure,
+    t_variable,
+    t_integer,
+    t_float,
+    t_string,
+    t_bool,
+    t_if,
+    t_then,
+    t_else,
+    t_for,
+    t_return,
+    t_not,
+    t_true,
+    t_false
+]
+
+
+operator_tokens = [
+    t_comment_start,
+    t_comment_end,
+    t_comment,
+    t_assignment,
+    t_greater_than_or_equal_to,
+    t_less_than_or_equal_to,
+    t_equal_to,
+    t_not_equal_to,
+    t_greater_than,
+    t_less_than,
+    t_comma,
+    t_add,
+    t_subtract,
+    t_multiply,
+    t_divide,
+    t_semicolon,
+    t_colon,
+    t_lparen,
+    t_rparen,
+    t_lbracket,
+    t_rbracket,
+    t_and,
+    t_or,
+    t_period
 ]

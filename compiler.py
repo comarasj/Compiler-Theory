@@ -8,6 +8,7 @@ from scanner import Scanner
 
 if __name__ == '__main__':
     scanner = Scanner( 'text.txt' )
-    tokens = iter( scanner.read() )
-    parser = Parser( tokens )
-    parser.parse()
+    tokens = scanner.read()
+    iter_tokens = iter( tokens )
+    mynewparser = Parser( iter_tokens )
+    mynewparser.parse()
