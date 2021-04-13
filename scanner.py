@@ -14,15 +14,15 @@ class Scanner:
         elif re.fullmatch( "[0-9]*", part ):
             return Token( "number", part, self.line_count )
         elif re.fullmatch( "[a-zA-Z_][a-zA-Z0-9_]*", part ):
-            return Token( "string", part, self.line_count )
+            return Token( "identifier", part, self.line_count )
+        else:
+            raise Exception( 'Scanning Error: Line #{} Idenifiers may not begin with numbers'.format( self.line_count ) )
 
     def read( self ):
         # open input file
         file_object = open( self.input_file, 'r' )
-        file_contents = file_object.read()
-        
-        # split input file by end line
-        lines = re.split('\n+', file_contents)
+        lines = file_object.readlines()
+        multi_line_comment_flag = False
         for line in lines:
             self.line_count = self.line_count + 1
             # split line by whitespace
