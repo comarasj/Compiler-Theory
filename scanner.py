@@ -26,6 +26,7 @@ class Scanner:
         for line in lines:
             self.line_count = self.line_count + 1
             # split line by whitespace
+            line = line.lower()
             parts = re.split( '\s+', line )
             
             for op in operator_tokens:

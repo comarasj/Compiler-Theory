@@ -3,21 +3,26 @@ import tokens
 from scoper import Scoper
 
 class Parser:
+
+
     def __init__( self, _token_list ):
         self.token_list = _token_list
         self.current_token = None
         self.scoper = Scoper( 'GLOBAL' )
+
 
     def is_token_type( self, test_token ):
         if self.current_token.name == test_token.name:
             return True
         return False
 
+
     # Start to parse
     def parse( self ):
         self.current_token = next( self.token_list )
         self.program()
-    
+
+
     def program( self ):
         # Check program header
         if not self.program_header():
@@ -25,10 +30,8 @@ class Parser:
         # Check program body
         if not self.program_body():
             return False
-        # Check program end '.'
-        if not self.program_end():
-            return False
         return True
+
 
     def program_header( self ):
         if not self.is_token_type( tokens.t_program ):
@@ -45,10 +48,11 @@ class Parser:
 
         print( 'Correct program header' )
         return True
-    
+
+
     def program_body( self ):
         # Check for declarations
-        if not self.declarations():
+        if not self.declaration():
             return False
         self.current_token = next( self.token_list )
 
@@ -71,34 +75,23 @@ class Parser:
             return False
         self.current_token = next( self.token_list )
 
-        print( 'Correct program body' )
-
-        return True
-    
-    def program_end( self ):
-        # Check for period '.'
         if not self.is_token_type( tokens.t_period ):
             return False
-        return True
+        
+        print( 'Correct program body' )
+        return True 
 
 
     # There can be 0 to many declarations
-    def declarations( self ):
+    def declaration( self ):
         while( not self.is_token_type( tokens.t_begin ) ):
             # Check for global 
 
             # Check for procedure
             if self.is_token_type( tokens.t_procedure ):
                 self.current_token = next( self.token_list )
-                # Check procedure header
-                if not self.procedure_header():
-                    return False
-                # Check procedure body
-                self.current_token = next( self.token_list )
-                if not self.procedure_body():
-                    return False
-                # Check procedure end
-                if not self.procedure_end():
+                if not self.procedure_declaration():
+                    print( 'Invalid Procedure Declaration' )
                     return False
 
             # Check for variables
@@ -112,7 +105,16 @@ class Parser:
         return True
 
 
-        
+    def procedure_declaration( self ):
+        # Check procedure header
+        if not self.procedure_header():
+            return False
+        # Check procedure body
+        self.current_token = next( self.token_list )
+        if not self.procedure_body():
+            return False
+
+
     def procedure_header( self ):
         if not self.is_token_type( tokens.t_string ):
             return False
@@ -143,21 +145,38 @@ class Parser:
         if not self.handle_input_params( procedure_name ):
             return False
         self.scoper.next_scope()
+
+        print( 'Correct procedure header' )
         return True
-        
+
+
     def procedure_body( self ):
         # Check for declarations
-        if not self.declarations():
+        if not self.declaration():
             return False
-        self.current_token = next( self.token_list )
-
         # Check for begin
         if not self.is_token_type( tokens.t_begin ):
             return False
         self.current_token = next( self.token_list )
+        # Check for valid code
+        if not self.valid_code( tokens.t_procedure ):
+            return False
+        
+        
+        if not self.is_token_type( tokens.t_end ):
+            return False
+        self.current_token = next( self.token_list )
 
-    def procedure_end( self ):
-        pass
+        if not self.is_token_type( tokens.t_procedure ):
+            return False
+        self.current_token = next( self.token_list )
+
+        if not self.is_token_type( tokens.t_semicolon ):
+            return False
+        
+        print( 'Correct procedure body' )
+        return True        
+
 
     def handle_input_params( self, procedure_name ):
         if not self.is_token_type( tokens.t_lparen ):
@@ -165,7 +184,6 @@ class Parser:
         self.current_token = next( self.token_list )
         if not self.is_token_type( tokens.t_rparen ):
             while( True ):
-                #TODO Populate parameters in identifiers list
                 if not self.is_token_type( tokens.t_variable ):
                     return False
                 self.current_token = next( self.token_list )
@@ -224,3 +242,98 @@ class Parser:
             return False
         return True
 
+
+    '''
+    Check for valid code declarations
+        caller is of type token
+    '''
+    def valid_code( self, caller ):
+        if self.is_token_type( tokens.t_if ):
+            # handle if statement
+            self.current_token = next( self.token_list )
+            if not self.if_header():
+                return False
+            
+            if not self.if_body():
+                return False
+            
+            if not self.if_end():
+                return False
+
+        elif self.is_token_type( tokens.t_for ):
+            # handle for loop
+            return False
+        elif self.is_token_type( tokens.t_variable ):
+            # handle variable assignment
+            return False
+        elif self.is_token_type( tokens.t_string ):
+            # handle variable operations
+            return False
+        elif self.is_token_type( tokens.t_return ):
+            # handle return
+            return False
+
+
+        return True
+
+
+    def if_header( self ):
+        if not self.is_token_type( tokens.t_lparen ):
+            return False
+        self.current_token = next( self.token_list )
+
+        # Check for an identifier or number or true or false
+        if self.is_token_type( tokens.t_string ):
+            if not self.scoper.is_variable_in_scope( self.current_token.text ):
+                return False
+        elif not self.is_token_type( tokens.t_number ) and not self.is_token_type( tokens.t_true and not self.is_token_type( tokens.t_false ) ):
+            return False
+        self.current_token = next( self.token_list )
+         
+        # Check for comparison operator
+        if not ( self.is_token_type( tokens.t_equal_to ) or self.is_token_type( tokens.t_greater_than ) or
+                 self.is_token_type( tokens.t_greater_than_or_equal_to ) or self.is_token_type( tokens.t_less_than ) or
+                 self.is_token_type( tokens.t_less_than_or_equal_to ) or self.is_token_type( tokens.t_not_equal_to ) ):
+            return False
+        self.current_token = next( self.token_list )
+        
+        # Check for an identifier or number or true or false
+        if self.is_token_type( tokens.t_string ):
+            if not self.scoper.is_variable_in_scope( self.current_token.text ):
+                return False
+        elif not self.is_token_type( tokens.t_number ):
+            return False
+        self.current_token = next( self.token_list )
+
+        if not self.is_token_type( tokens.t_rparen ):
+            return False
+        self.current_token = next( self.token_list )
+
+        if not self.is_token_type( tokens.t_then ):
+            return False
+        self.current_token = next( self.token_list )
+        return True
+
+
+    def if_body( self ):
+        # Statements
+        self.valid_code()
+        return True
+
+    def if_end( self ):
+        if not self.is_token_type( tokens.t_end ):
+            return False
+        self.current_token = next( self.token_list )
+
+        if not self.is_token_type( tokens.t_if ):
+            return False
+        self.current_token = next( self.token_list )
+
+        if not self.is_token_type( tokens.t_semicolon ):
+            return False
+        
+        return True
+
+
+    def expression( self ):
+        pass

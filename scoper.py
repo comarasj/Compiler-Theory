@@ -6,10 +6,10 @@ class Scoper:
         self.next_scope_name = ''
     
     def create_new_scope( self, scope_name ):
-        if self.scopes[ scope_name ]:
+        if scope_name in self.scopes:
             print( 'Scoping Error, ' + str( scope_name ) + 'already exists!' )
             return False
-        self.scopes[ scope_name ] = { 'procedures': {}, 'variables': {}, 'parent': current_scope_name }
+        self.scopes[ scope_name ] = { 'procedures': {}, 'variables': {}, 'parent': self.current_scope_name }
         self.next_scope_name = scope_name
         return True
     
@@ -35,7 +35,20 @@ class Scoper:
     
     def add_procedure_input_param_type( self, procedure_name, input_param, input_type ):
         self.scopes[ self.current_scope_name ][ 'procedures' ][ procedure_name ][ 'input_params' ][ input_param ][ 'type' ] = input_type
+    
+    def get_parent_scope( self, child_scope_name ):
+        return self.scopes[ child_scope_name ].parent
 
-
-
+    def is_variable_in_scope( self, variable_name, search_scope ):
+        if search_scope == None:
+            search_scope = self.current_scope_name
         
+        if self.scopes[ search_scope ]:
+            if self.scopes[ search_scope ][ variable_name]: 
+                return True
+            else:
+                parent_scope = self.get_parent_scope( search_scope )
+                if not parent_scope == None:
+                    return self.is_variable_in_scope( variable_name, parent_scope )
+        return False
+
