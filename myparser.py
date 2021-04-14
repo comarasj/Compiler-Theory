@@ -139,6 +139,7 @@ class Parser:
         self.current_token = next( self.token_list )
         if not self.procedure_body():
             return False
+        return True
 
 
     def procedure_header( self ):
@@ -448,42 +449,49 @@ class Parser:
             self.current_token = next( self.token_list )
             if not self.number() and not self.string():
                 return False
-        elif self.procedure_call():
+        elif self.procedure_call_or_name():
             self.current_token = next( self.token_list )
-            pass
-        elif self.name():
-            self.current_token = next( self.token_list )
-            pass
         elif self.number():
             self.current_token = next( self.token_list )
-            pass
         elif self.string():
             self.current_token = next( self.token_list )
-            pass
-        elif self.is_token_type( tokens.t_true ) or self.is_token_type( token.t_false ):
+        elif self.is_token_type( tokens.t_true ) or self.is_token_type( tokens.t_false ):
             self.current_token = next( self.token_list )
-            pass
         else:
             return False
         return True
-    
-
-    def procedure_call( self ):
-        return False
 
 
-    def argument_list( self ):
-        return False
-
-
-    def argument_list_prime( self ):
-        return True
-
-
-    def name( self ):
+    def procedure_call_or_name( self ):
         if not self.identifier():
             return False
         self.current_token = next( self.token_list )
+        if self.is_token_type( tokens.t_lparen ):
+            self.current_token = next( self.token_list )
+            if not self.procedure_call():
+                return False
+            if not self.is_token_type( tokens.t_rparen ):
+                return False
+        elif not self.name():
+            return False
+        return True
+
+
+    def procedure_call( self ):
+        if self.argument_list():
+            pass
+        return True
+
+    #TODO come back to me
+    def argument_list( self ):
+        if not self.expression():
+            return False
+        while( self.is_token_type( tokens.t_comma ) ):
+            if not self.expression():
+                return False
+
+
+    def name( self ):
         if self.is_token_type( tokens.t_lbracket ):
             if not self.expression():
                 return False
