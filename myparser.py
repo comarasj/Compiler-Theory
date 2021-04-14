@@ -195,7 +195,7 @@ class Parser:
         # Check for valid code
         if not self.valid_code():
             return False        
-        
+        self.current_token = next( self.token_list )
         if not self.is_token_type( tokens.t_end ):
             return False
         self.current_token = next( self.token_list )
@@ -296,16 +296,13 @@ class Parser:
     '''
     def valid_code( self ):
         while self.statement():
-            if self.is_token_type( tokens.t_semicolon ):
+            if not self.is_token_type( tokens.t_semicolon ):
                 return False
         return True
 
 
     def statement( self ):
-        if ( not self.assignment_statement() and 
-           not self.if_statement() and 
-           not self.loop_statment() and
-           not self.return_statement() ):
+        if ( not self.assignment_statement() ):
             return False
         return True
 
@@ -313,7 +310,6 @@ class Parser:
     def assignment_statement( self ):
         if not self.destination():
             return False
-        self.current_token = next( self.token_list )
         if not self.is_token_type( tokens.t_assignment ):
             return False
         self.current_token = next( self.token_list )
@@ -357,14 +353,14 @@ class Parser:
                return False
         elif not self.arithOp():
             return False
-        self.current_token = next( self.token_list )
+
         if not self.expression_prime():
             return False
         return True
     
 
     def expression_prime( self ):
-        if self.is_token_type( tokens.t_and ) or self.is_token_type( tokens_or ):
+        if self.is_token_type( tokens.t_and ) or self.is_token_type( tokens.t_or ):
             self.current_token = next( self.token_list )
             if not self.arithOp():
                 return False
@@ -377,7 +373,7 @@ class Parser:
     def arithOp( self ):
         if not self.relation():
             return False
-        self.current_token = next( self.token_list )
+
         if not self.arithOp_prime():
             return False
         
@@ -389,7 +385,7 @@ class Parser:
             self.current_token = next( self.token_list )
             if not self.relation():
                 return False
-            self.current_token = next( self.token_list )
+
             if not self.arithOp_prime():
                 return False
         return True
@@ -398,7 +394,7 @@ class Parser:
     def relation( self ):
         if not self.term():
             return False
-        self.current_token = next( self.token_list )
+
         if not self.relation_prime():
             return False
         return True
@@ -424,7 +420,7 @@ class Parser:
     def term( self ):
         if not self.factor():
             return False
-        self.current_token = next( self.token_list )
+
         if not self.term_prime():
             return False
         return True
@@ -452,24 +448,32 @@ class Parser:
             self.current_token = next( self.token_list )
             if not self.number() and not self.string():
                 return False
-        elif ( not self.procedure_call() and
-               not self.name() and
-               not self.number() and
-               not self.string() and
-               not self.is_token_type( tokens.t_true ) and
-               not self.is_token_type( token.t_false ) ):
-            return False
+        elif self.procedure_call():
+            self.current_token = next( self.token_list )
+            pass
+        elif self.name():
+            self.current_token = next( self.token_list )
+            pass
+        elif self.number():
+            self.current_token = next( self.token_list )
+            pass
+        elif self.string():
+            self.current_token = next( self.token_list )
+            pass
+        elif self.is_token_type( tokens.t_true ) or self.is_token_type( token.t_false ):
+            self.current_token = next( self.token_list )
+            pass
         else:
             return False
         return True
     
 
     def procedure_call( self ):
-        return True
+        return False
 
 
     def argument_list( self ):
-        return True
+        return False
 
 
     def argument_list_prime( self ):
@@ -479,7 +483,7 @@ class Parser:
     def name( self ):
         if not self.identifier():
             return False
-        self.current_token - next( self.token_list )
+        self.current_token = next( self.token_list )
         if self.is_token_type( tokens.t_lbracket ):
             if not self.expression():
                 return False
