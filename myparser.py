@@ -80,7 +80,6 @@ class Parser:
         # Check for declarations
         if not self.declaration():
             return False
-        self.current_token = next( self.token_list )
 
         # Check for begin
         if not self.is_token_type( tokens.t_begin ):
@@ -88,8 +87,9 @@ class Parser:
         self.current_token = next( self.token_list )
 
         # Check for valid statements
-        ##
-        ##
+        if not self.valid_code():
+            return False
+        self.current_token = next( self.token_list )
 
         # Check for end
         if not self.is_token_type( tokens.t_end ):
@@ -303,7 +303,7 @@ class Parser:
 
 
     def statement( self ):
-        if ( not self.assignment_statement() ):
+        if ( not self.assignment_statement() and not self.if_statement() and not self.loop_statment() ):
             return False
         return True
 
@@ -320,10 +320,74 @@ class Parser:
 
 
     def if_statement( self ):
+        if not self.is_token_type( tokens.t_if ):
+            return False
+        self.current_token = next( self.token_list )
+        if not self.is_token_type( tokens.t_lparen ):
+            return False
+        self.current_token = next( self.token_list )
+        if not self.expression():
+            return False
+        if not self.is_token_type( tokens.t_rparen ):
+            return False
+        self.current_token = next( self.token_list )
+        if not self.is_token_type( tokens.t_then ):
+            return False
+        self.current_token = next( self.token_list )
+        if not self.valid_code():
+            return False
+        self.current_token = next( self.token_list )
+
+        if self.is_token_type( tokens.t_else ):
+            self.current_token = next( self.token_list )
+            if not self.valid_code():
+                return False
+            self.current_token = next( self.token_list )
+
+        if not self.is_token_type( tokens.t_end ):
+            return False
+        
+        self.current_token = next( self.token_list )
+
+        if not self.is_token_type( tokens.t_if ):
+            return False
+
+        self.current_token = next( self.token_list )
+
         return True
     
 
     def loop_statment( self ):
+        if not self.is_token_type( tokens.t_for ):
+            return False
+        self.current_token = next( self.token_list )
+        if not self.is_token_type( tokens.t_lparen ):
+            return False
+        self.current_token = next( self.token_list )
+        if not self.assignment_statement():
+            return False
+        if not self.is_token_type( tokens.t_semicolon ):
+            return False
+        self.current_token = next( self.token_list )
+        if not self.expression():
+            return False
+        if not self.is_token_type( tokens.t_rparen ):
+            return False
+        self.current_token = next( self.token_list )
+        if not self.valid_code():
+            return False
+        self.current_token = next( self.token_list )
+
+        if not self.is_token_type( tokens.t_end ):
+            return False
+
+        self.current_token = next( self.token_list )
+    
+        if not self.is_token_type( tokens.t_for ):
+            return False
+        
+        self.current_token = next( self.token_list )
+
         return True
 
     
@@ -412,7 +476,7 @@ class Parser:
             self.current_token = next( self.token_list )
             if not self.term():
                 return False
-            self.current_token = next( self.token_list )
+            # self.current_token = next( self.token_list )
             if not self.relation_prime():
                 return False
         return True
@@ -450,7 +514,7 @@ class Parser:
             if not self.number() and not self.string():
                 return False
         elif self.procedure_call_or_name():
-            self.current_token = next( self.token_list )
+            pass
         elif self.number():
             self.current_token = next( self.token_list )
         elif self.string():
@@ -493,10 +557,12 @@ class Parser:
 
     def name( self ):
         if self.is_token_type( tokens.t_lbracket ):
+            self.current_token = next( self.token_list )
             if not self.expression():
                 return False
             if not self.is_token_type( tokens.t_rbracket ):
                 return False
+            self.current_token = next( self.token_list )
         return True
 
 
