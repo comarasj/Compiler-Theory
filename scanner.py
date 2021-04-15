@@ -30,7 +30,6 @@ class Scanner:
         # open input file
         file_object = open( self.input_file, 'r' )
         lines = file_object.readlines()
-        multi_line_comment_flag = False
         for line in lines:
             self.line_count = self.line_count + 1
             # split line by whitespace
@@ -94,4 +93,18 @@ class Scanner:
             parts = new_parts
 
             self.token_list.extend( parts )
+        multi_line_comment = []
+        remove_tokens = []
+        for token in self.token_list:
+            if token.text == t_comment_start.text:
+                multi_line_comment.append( token.line_number )
+                remove_tokens.append( token )
+            elif token.text == t_comment_end.text:
+                multi_line_comment.pop()
+                remove_tokens.append( token )
+            elif len( multi_line_comment ) > 0:
+                remove_tokens.append( token )
+        for token in remove_tokens:
+            self.token_list.remove( token )
+
         return self.token_list
