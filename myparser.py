@@ -98,7 +98,6 @@ class Parser:
         # Check for valid statements
         if not self.valid_code():
             return False
-        self.current_token = next( self.token_list )
 
         # Check for end
         if not self.is_token_type( tokens.t_end ):
@@ -204,8 +203,7 @@ class Parser:
         self.current_token = next( self.token_list )
         # Check for valid code
         if not self.valid_code():
-            return False        
-        self.current_token = next( self.token_list )
+            return False
         if not self.is_token_type( tokens.t_end ):
             return False
         self.current_token = next( self.token_list )
@@ -225,7 +223,7 @@ class Parser:
                     return False
                 self.current_token = next( self.token_list )
 
-                if not self.is_token_type( tokens.t_string ):
+                if not self.is_token_type( tokens.t_identifier ):
                     return False
                 var_name = self.current_token.text
                 self.scoper.add_procedure_input_param( procedure_name, var_name )
@@ -308,6 +306,7 @@ class Parser:
         while self.statement():
             if not self.is_token_type( tokens.t_semicolon ):
                 return False
+            self.current_token = next( self.token_list )
         return True
 
 
@@ -345,7 +344,7 @@ class Parser:
         self.current_token = next( self.token_list )
         if not self.valid_code():
             return False
-        self.current_token = next( self.token_list )
+        # self.current_token = next( self.token_list )
 
         if self.is_token_type( tokens.t_else ):
             self.current_token = next( self.token_list )
@@ -550,6 +549,7 @@ class Parser:
                 return False
             if not self.is_token_type( tokens.t_rparen ):
                 return False
+            self.current_token = next( self.token_list )
         elif not self.name():
             return False
         return True

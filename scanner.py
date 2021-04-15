@@ -8,7 +8,7 @@
 import re
 
 # Imported file classes
-from tokens import operator_tokens, keyword_tokens, Token
+from tokens import operator_tokens, keyword_tokens, Token, t_comment, t_comment_start, t_comment_end
 
 class Scanner:
     def __init__( self, input_file ):
@@ -36,20 +36,41 @@ class Scanner:
             # split line by whitespace
             line = line.lower()
             parts = re.split( '\s+', line )
-            
+
             for op in operator_tokens:
-                new_parts = []
-                for part in parts:
-                    if isinstance( part, str ):
-                        split = part.split( op.text )
-                        for s in split:
-                            if len( s ) > 0:
-                                new_parts.append( s )
-                            new_parts.append( Token( op.name, op.text, self.line_count ) )
-                        new_parts.pop()
-                    else:
-                        new_parts.append( part )
-                parts = new_parts
+                if op.text == t_comment.text:
+                    comment_flag = False
+                    new_parts = []
+                    for part in parts:
+                        if not comment_flag:
+                            if isinstance( part, str ):
+                                split = part.split( op.text )
+                                for s in split:
+                                    if len( s ) > 0:
+                                        new_parts.append( s )
+                                    else: 
+                                        # new_parts.append( Token( op.name, op.text, self.line_count ) )
+                                        comment_flag = True
+                                        break
+
+                            else:
+                                new_parts.append( part )
+
+                    parts = new_parts
+                else:         
+                    new_parts = []
+                    for part in parts:
+                        if isinstance( part, str ):
+                            split = part.split( op.text )
+                            for s in split:
+                                if len( s ) > 0:
+                                    new_parts.append( s )
+                                new_parts.append( Token( op.name, op.text, self.line_count ) )
+                            new_parts.pop()
+                        else:
+                            new_parts.append( part )
+
+                    parts = new_parts
             
             for keyword in keyword_tokens:
                 new_parts = []
