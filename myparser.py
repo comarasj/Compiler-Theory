@@ -1,4 +1,13 @@
+# Stephen Comarata
+# EECE 5183 - 001 Compiler Theory 
+# This program is the parser class for the compiler project 
+#
+# myparser.py
+
+# Imported libraries
 import re
+
+# Imported file classes
 import tokens
 from scoper import Scoper
 
@@ -303,7 +312,7 @@ class Parser:
 
 
     def statement( self ):
-        if ( not self.assignment_statement() and not self.if_statement() and not self.loop_statment() ):
+        if ( not self.assignment_statement() and not self.if_statement() and not self.loop_statment() and not self.return_statement() ):
             return False
         return True
 
@@ -392,6 +401,11 @@ class Parser:
 
     
     def return_statement( self ):
+        if not self.is_token_type( tokens.t_return ):
+            return False
+        self.current_token = next( self.token_list )
+        if not self.expression():
+            return False
         return True
 
 

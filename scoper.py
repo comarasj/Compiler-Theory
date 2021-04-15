@@ -1,3 +1,9 @@
+# Stephen Comarata
+# EECE 5183 - 001 Compiler Theory 
+# This program is the scoper class for the compiler project 
+#
+# scoper.py
+
 class Scoper:
     def __init__( self, base_scope ):
         self.current_scope_name = base_scope

@@ -1,5 +1,13 @@
+# Stephen Comarata
+# EECE 5183 - 001 Compiler Theory 
+# This program is the scanner class for the compiler project 
+#
+# scanner.py
 
+# Imported libraries
 import re
+
+# Imported file classes
 from tokens import operator_tokens, keyword_tokens, Token
 
 class Scanner:

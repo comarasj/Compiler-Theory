@@ -1,4 +1,8 @@
-
+# Stephen Comarata
+# EECE 5183 - 001 Compiler Theory 
+# This program is the token class for the compiler project 
+#
+# tokens.py
 
 class Token:
     def __init__( self, name, text, line_number=0 ):
@@ -13,7 +17,7 @@ keywords = [ 'program', 'is', 'begin', 'end', 'global', 'procedure',
 
 
 t_comment_start = Token( 'comment', '/*' )
-t_comment_end = Token( 'comment', '/*' )
+t_comment_end = Token( 'comment', '*/' )
 t_comment = Token( 'comment', '//' )
 
 t_program = Token( 'program', 'program' )
