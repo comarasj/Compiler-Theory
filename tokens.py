@@ -120,6 +120,22 @@ operator_tokens = [
 
 
 built_in_functions = {
+    'getbool': { 
+        'type': 'bool', 
+        'input_params': {}
+    },
+    'getinteger': { 
+        'type': 'integer', 
+        'input_params': {}
+    },
+    'getfloat': { 
+        'type': 'float', 
+        'input_params': {}
+    },
+    'getstring': { 
+        'type': 'string', 
+        'input_params': {}
+    },
     'putbool': { 
         'type': 'bool', 
         'input_params': { 
