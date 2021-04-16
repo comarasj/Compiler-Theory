@@ -288,6 +288,7 @@ class Parser:
             self.next_token()
             if not self.is_token_type( tokens.t_rbracket ):
                 return False
+            self.next_token()
         return True
     
 
