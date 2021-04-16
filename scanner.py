@@ -11,10 +11,12 @@ import re
 from tokens import operator_tokens, keyword_tokens, Token, t_comment, t_comment_start, t_comment_end
 
 class Scanner:
-    def __init__( self, input_file ):
+    def __init__( self, input_file, logger ):
         self.input_file = input_file
         self.token_list = []
         self.line_count = 0
+        self.logger = logger
+        self.logger.set_origin( 'Scanner' )
 
     def make_token( self, part ):
         if isinstance( part, Token ):

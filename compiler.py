@@ -10,15 +10,17 @@ import sys, getopt
 # Imported file classes
 from myparser import Parser
 from scanner import Scanner
+from logger import Logger
 
 
 
 # Main Function
 def main( input_file, output_file, verbose ):
-    scanner = Scanner( input_file )
+    logger = Logger( verbose )
+    scanner = Scanner( input_file, logger )
     tokens = scanner.read()
     iter_tokens = iter( tokens )
-    mynewparser = Parser( iter_tokens )
+    mynewparser = Parser( iter_tokens, logger )
     mynewparser.parse()
 
 

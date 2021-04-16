@@ -16,18 +16,18 @@ class Scoper:
 
 
     def create_new_scope( self, scope_name ):
-        if scope_name in self.scopes:
-            print( 'Scoping Error, ' + str( scope_name ) + 'already exists!' )
-            return False
         self.scopes[ scope_name ] = { 'procedures': {}, 'variables': {}, 'parent': self.current_scope_name }
         self.next_scope_name = scope_name
-        return True
 
 
-    def next_scope( self ):
+    def go_to_next_scope( self ):
         temp = self.current_scope_name
         self.current_scope_name = self.next_scope_name
         self.next_scope_name = temp # default back to previous
+
+
+    def go_to_base_scope( self ):
+        self.current_scope_name = self.base_scope
 
 
     def add_variable( self, variable_name, global_flag ):
@@ -90,7 +90,7 @@ class Scoper:
             search_scope = self.current_scope_name
         
         if self.scopes[ search_scope ]:
-            if self.scopes[ search_scope ][ variable_name]: 
+            if self.scopes[ search_scope ][ 'variables' ][ variable_name ]: 
                 return True
             else:
                 parent_scope = self.get_parent_scope( search_scope )
@@ -98,3 +98,30 @@ class Scoper:
                     return self.is_variable_in_scope( variable_name, parent_scope )
         return False
 
+
+    def is_procedure_in_scope( self, procedure_name, search_scope ):
+        if search_scope == None:
+            search_scope = self.current_scope_name
+        
+        if self.scopes[ search_scope ]:
+            if self.scopes[ search_scope ][ 'procedures' ][ procedure_name ]: 
+                return True
+            else:
+                parent_scope = self.get_parent_scope( search_scope )
+                if not parent_scope == None:
+                    return self.is_procedure_in_scope( procedure_name, parent_scope )
+        return False
+    
+
+    def is_variable_in_current_scope( self, variable_name ):
+        if self.scopes[ self.current_scope_name ]:
+            if self.scopes[ self.current_scope_name ][ 'variables' ][ variable_name ]:
+                return True
+        return False
+    
+
+    def is_procedure_in_current_scope( self, procedure_name ):
+        if self.scopes[ self.current_scope_name ]:
+            if procedure_name in self.scopes[ self.current_scope_name ][ 'procedures' ]:
+                return True
+        return False

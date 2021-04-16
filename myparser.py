@@ -14,10 +14,12 @@ from scoper import Scoper
 class Parser:
 
 
-    def __init__( self, _token_list ):
+    def __init__( self, _token_list, logger ):
         self.token_list = _token_list
         self.current_token = None
         self.scoper = Scoper( 'GLOBAL' )
+        self.logger = logger
+        self.logger.set_origin( 'Parser' )
 
 
     def is_token_type( self, test_token ):
@@ -30,7 +32,8 @@ class Parser:
         try:
             self.current_token = next( self.token_list )
         except:
-            print( 'log error' )
+            self.logger.report_error( 'Expected more tokens but found end of file' )
+            sys.exit( 2 )
 
     # Start to parse
     def parse( self ):
@@ -103,6 +106,8 @@ class Parser:
             return False
         self.next_token()
 
+        self.scoper.go_to_base_scope()
+
         # Check for valid statements
         if not self.valid_code():
             return False
@@ -131,16 +136,19 @@ class Parser:
             # Check for procedure
             if self.is_token_type( tokens.t_procedure ):
                 if not self.procedure_declaration( global_flag ):
-                    raise Exception( 'Parsing Error: Invalid Procedure Declaration' )
+                    # raise Exception( 'Parsing Error: Invalid Procedure Declaration' )
+                    # # Try to resync
                     return False
                 if not self.is_token_type( tokens.t_semicolon ):
                     return False
+                self.scoper.go_to_base_scope()
                 self.next_token()
 
             # Check for variables
             elif self.is_token_type( tokens.t_variable ):
                 if not self.variable_declaration( global_flag ):
-                    raise Exception( 'Parsing Error: Invalid Variable Declaration' )
+                    # raise Exception( 'Parsing Error: Invalid Variable Declaration' )
+                    # # Try to resync
                     return False
                 if not self.is_token_type( tokens.t_semicolon ):
                     return False
@@ -168,10 +176,12 @@ class Parser:
         self.next_token()
         if not self.identifier():
             return False
-        if not self.scoper.create_new_scope( self.current_token.text ):
+        procedure_name = self.current_token.text
+        if self.scoper.is_procedure_in_current_scope( procedure_name ):
+            self.logger.report_error( '{} already exists in scope'.format( procedure_name ), self.current_token.line_number )
             return False
 
-        procedure_name = self.current_token.text
+        self.scoper.create_new_scope( procedure_name )
         self.scoper.add_procedure( procedure_name, global_flag )
 
         self.next_token()
@@ -198,7 +208,7 @@ class Parser:
         if not self.is_token_type( tokens.t_rparen ):
             return False
 
-        self.scoper.next_scope()
+        self.scoper.go_to_next_scope()
 
         print( 'Correct procedure header' )
         return True
@@ -292,27 +302,6 @@ class Parser:
         return True
     
 
-    def create_var_declaration( self ):
-        var_name = self.current_token.text
-        self.scoper.add_variable( var_name )
-        self.next_token()
-        if not self.is_token_type( tokens.t_colon ):
-            return False
-        self.next_token()
-        if ( not self.is_token_type( tokens.t_integer ) and 
-             not self.is_token_type( tokens.t_float ) and 
-             not self.is_token_type( tokens.t_string ) and 
-             not self.is_token_type( tokens.t_bool ) ):
-            print( 'Invalid variable type' )
-            return False
-        var_type = self.current_token.name
-        self.scoper.add_variable_type( var_name, var_type )
-        self.next_token()
-        if not self.is_token_type( tokens.t_semicolon ):
-            return False
-        return True
-
-
     '''
     Zero or more statements needed
     Check for valid code declarations
@@ -360,7 +349,6 @@ class Parser:
         self.next_token()
         if not self.valid_code():
             return False
-        # self.next_token()
 
         if self.is_token_type( tokens.t_else ):
             self.next_token()
@@ -505,7 +493,6 @@ class Parser:
             self.next_token()
             if not self.term():
                 return False
-            # self.next_token()
             if not self.relation_prime():
                 return False
         return True
