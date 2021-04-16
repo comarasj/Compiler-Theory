@@ -88,7 +88,7 @@ class Parser:
     
 
     def bound( self ):
-        if not self.is_token_type( number ):
+        if not self.is_token_type( tokens.t_number ):
             return False
         return True
 
@@ -130,7 +130,7 @@ class Parser:
                 self.next_token()
             # Check for procedure
             if self.is_token_type( tokens.t_procedure ):
-                if not self.procedure_declaration():
+                if not self.procedure_declaration( global_flag ):
                     raise Exception( 'Parsing Error: Invalid Procedure Declaration' )
                     return False
                 if not self.is_token_type( tokens.t_semicolon ):
@@ -139,7 +139,7 @@ class Parser:
 
             # Check for variables
             elif self.is_token_type( tokens.t_variable ):
-                if not self.variable_declaration():
+                if not self.variable_declaration( global_flag ):
                     raise Exception( 'Parsing Error: Invalid Variable Declaration' )
                     return False
                 if not self.is_token_type( tokens.t_semicolon ):
@@ -150,9 +150,9 @@ class Parser:
         return True
 
 
-    def procedure_declaration( self ):
+    def procedure_declaration( self, global_flag ):
         # Check procedure header
-        if not self.procedure_header():
+        if not self.procedure_header( global_flag ):
             return False
         # Check procedure body
         self.next_token()
@@ -161,7 +161,7 @@ class Parser:
         return True
 
 
-    def procedure_header( self ):
+    def procedure_header( self, global_flag ):
         if not self.is_token_type( tokens.t_procedure ):
             return False
 
@@ -172,7 +172,7 @@ class Parser:
             return False
 
         procedure_name = self.current_token.text
-        self.scoper.add_procedure( procedure_name )
+        self.scoper.add_procedure( procedure_name, global_flag )
 
         self.next_token()
 
@@ -183,7 +183,7 @@ class Parser:
         if not self.type_mark():
             return False
         procedure_type = self.current_token.text
-        self.scoper.add_procedure_type( procedure_name, procedure_type ) 
+        self.scoper.add_procedure_type( procedure_name, procedure_type, global_flag ) 
 
         self.next_token()
 
@@ -192,7 +192,7 @@ class Parser:
 
         self.next_token()
 
-        if not self.parameter_list( procedure_name ):
+        if not self.parameter_list( procedure_name, global_flag ):
             return False
 
         if not self.is_token_type( tokens.t_rparen ):
@@ -227,7 +227,7 @@ class Parser:
         return True        
 
 
-    def parameter_list( self, procedure_name ):
+    def parameter_list( self, procedure_name, global_flag ):
         if not self.is_token_type( tokens.t_rparen ):
             while( True ):
                 if not self.is_token_type( tokens.t_variable ):
@@ -237,7 +237,7 @@ class Parser:
                 if not self.is_token_type( tokens.t_identifier ):
                     return False
                 var_name = self.current_token.text
-                self.scoper.add_procedure_input_param( procedure_name, var_name )
+                self.scoper.add_procedure_input_param( procedure_name, var_name, global_flag )
                 self.next_token()
 
                 if not self.is_token_type( tokens.t_colon ):
@@ -250,7 +250,7 @@ class Parser:
                    not self.is_token_type( tokens.t_bool ) ):
                     return False
                 var_type = self.current_token.text
-                self.scoper.add_procedure_input_param_type( procedure_name, var_name, var_type )
+                self.scoper.add_procedure_input_param_type( procedure_name, var_name, var_type, global_flag )
                 self.next_token()
                 if self.is_token_type( tokens.t_comma ):
                     self.next_token()
@@ -261,14 +261,14 @@ class Parser:
         return True
 
 
-    def variable_declaration( self ):
+    def variable_declaration( self, global_flag ):
         if not self.is_token_type( tokens.t_variable ):
             return False
         self.next_token()
         if not self.identifier():
             return False
         var_name = self.current_token.text
-        self.scoper.add_variable( var_name )
+        self.scoper.add_variable( var_name, global_flag )
         self.next_token()
 
         if not self.is_token_type( tokens.t_colon ):
@@ -277,12 +277,16 @@ class Parser:
         if not self.type_mark():
             return False
         var_type = self.current_token.name
-        self.scoper.add_variable_type( var_name, var_type )
+        self.scoper.add_variable_type( var_name, var_type, global_flag )
         self.next_token()
         if self.is_token_type( tokens.t_lbracket ):
+            self.next_token()
             if not self.bound():
                 return False
-            if not self.is_token_type( tokens.t_lbracket ):
+            array_length = self.current_token.text
+            self.scoper.add_variable_array_type( var_name, array_length, global_flag )
+            self.next_token()
+            if not self.is_token_type( tokens.t_rbracket ):
                 return False
         return True
     
