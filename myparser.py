@@ -146,7 +146,7 @@ class Parser:
 
             # Check for variables
             elif self.is_token_type( tokens.t_variable ):
-                if not self.variable_declaration( global_flag ):
+                if not self.variable_declaration( global_flag, False ):
                     # raise Exception( 'Parsing Error: Invalid Variable Declaration' )
                     # # Try to resync
                     return False
@@ -177,7 +177,9 @@ class Parser:
         if not self.identifier():
             return False
         procedure_name = self.current_token.text
-        if self.scoper.is_procedure_in_current_scope( procedure_name ):
+
+        # Scope Checking
+        if self.scoper.is_procedure_in_current_scope( procedure_name, global_flag ):
             self.logger.report_error( '{} already exists in scope'.format( procedure_name ), self.current_token.line_number )
             return False
 
@@ -195,6 +197,8 @@ class Parser:
         procedure_type = self.current_token.text
         self.scoper.add_procedure_type( procedure_name, procedure_type, global_flag ) 
 
+        self.scoper.go_to_next_scope()
+
         self.next_token()
 
         if not self.is_token_type( tokens.t_lparen ):
@@ -208,7 +212,7 @@ class Parser:
         if not self.is_token_type( tokens.t_rparen ):
             return False
 
-        self.scoper.go_to_next_scope()
+        
 
         print( 'Correct procedure header' )
         return True
@@ -240,45 +244,32 @@ class Parser:
     def parameter_list( self, procedure_name, global_flag ):
         if not self.is_token_type( tokens.t_rparen ):
             while( True ):
-                if not self.is_token_type( tokens.t_variable ):
-                    return False
-                self.next_token()
-
-                if not self.is_token_type( tokens.t_identifier ):
-                    return False
-                var_name = self.current_token.text
-                self.scoper.add_procedure_input_param( procedure_name, var_name, global_flag )
-                self.next_token()
-
-                if not self.is_token_type( tokens.t_colon ):
-                    return False
-                self.next_token()
-
-                if ( not self.is_token_type( tokens.t_integer ) and 
-                   not self.is_token_type( tokens.t_float ) and 
-                   not self.is_token_type( tokens.t_string ) and 
-                   not self.is_token_type( tokens.t_bool ) ):
-                    return False
-                var_type = self.current_token.text
-                self.scoper.add_procedure_input_param_type( procedure_name, var_name, var_type, global_flag )
-                self.next_token()
-                if self.is_token_type( tokens.t_comma ):
-                    self.next_token()
-                elif self.is_token_type( tokens.t_rparen ):
+                self.parameter()
+                if not self.is_token_type( tokens.t_comma ):
                     break
-                else:
-                    return False
+                self.next_token()
         return True
 
 
-    def variable_declaration( self, global_flag ):
+    def parameter( self ):
+        if not self.variable_declaration( False, True ):
+            return False
+
+
+    def variable_declaration( self, global_flag, input_param_flag ):
         if not self.is_token_type( tokens.t_variable ):
             return False
         self.next_token()
         if not self.identifier():
             return False
         var_name = self.current_token.text
+        if self.scoper.is_variable_in_current_scope( var_name, global_flag ):
+            self.logger.report_error( '{} already exists in scope'.format( var_name ), self.current_token.line_number )
+            return False
+        
         self.scoper.add_variable( var_name, global_flag )
+        if input_param_flag:
+            self.scoper.add_procedure_input_param( var_name )
         self.next_token()
 
         if not self.is_token_type( tokens.t_colon ):
@@ -288,6 +279,9 @@ class Parser:
             return False
         var_type = self.current_token.name
         self.scoper.add_variable_type( var_name, var_type, global_flag )
+        if input_param_flag:
+            self.scoper.add_procedure_input_param_type( var_name, var_type )
+
         self.next_token()
         if self.is_token_type( tokens.t_lbracket ):
             self.next_token()
@@ -295,6 +289,8 @@ class Parser:
                 return False
             array_length = self.current_token.text
             self.scoper.add_variable_array_type( var_name, array_length, global_flag )
+            if input_param_flag:
+                self.scoper.add_procedure_input_param_array_type( var_name, array_length )
             self.next_token()
             if not self.is_token_type( tokens.t_rbracket ):
                 return False
@@ -544,6 +540,14 @@ class Parser:
 
     def procedure_call_or_name( self ):
         if not self.identifier():
+            return False
+
+        identifier_name = self.current_token.text
+        # Scope Checking
+        proc = self.scoper.is_procedure_in_scope( identifier_name )
+        var = self.scoper.is_variable_in_scope( identifier_name )
+        if not self.scoper.is_procedure_in_scope( identifier_name ) and not self.scoper.is_variable_in_scope( identifier_name ):
+            self.logger.report_error( '{} does not exist in scope'.format( identifier_name ), self.current_token.line_number )
             return False
         self.next_token()
         if self.is_token_type( tokens.t_lparen ):

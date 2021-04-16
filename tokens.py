@@ -117,3 +117,57 @@ operator_tokens = [
     t_or,
     t_period
 ]
+
+
+built_in_functions = {
+    'putbool': { 
+        'type': 'bool', 
+        'input_params': { 
+            'value': { 
+                'type': 'bool', 
+                'is_array': False, 
+                'array_length': 0 
+            }
+        }
+    },
+    'putinteger': { 
+        'type': 'bool', 
+        'input_params': { 
+            'value': { 
+                'type': 'integer', 
+                'is_array': False, 
+                'array_length': 0 
+            }
+        }
+    },
+    'putfloat': { 
+        'type': 'bool', 
+        'input_params': { 
+            'value': { 
+                'type': 'float', 
+                'is_array': False, 
+                'array_length': 0 
+            }
+        }
+    },
+    'putstring': { 
+        'type': 'bool', 
+        'input_params': { 
+            'value': { 
+                'type': 'string', 
+                'is_array': False, 
+                'array_length': 0 
+            }
+        }
+    },
+    'sqrt': { 
+        'type': 'float', 
+        'input_params': { 
+            'value': { 
+                'type': 'integer', 
+                'is_array': False, 
+                'array_length': 0 
+            }
+        }
+    }
+}

@@ -4,6 +4,8 @@
 #
 # scoper.py
 
+from tokens import built_in_functions
+
 class Scoper:
 
 
@@ -13,6 +15,7 @@ class Scoper:
         self.current_scope_table = {}
         self.next_scope_name = ''
         self.base_scope = base_scope
+        self.add_built_in_functions()
 
 
     def create_new_scope( self, scope_name ):
@@ -67,30 +70,32 @@ class Scoper:
             self.scopes[ self.current_scope_name ][ 'procedures' ][ procedure_name ][ 'type' ] = procedure_type
 
 
-    def add_procedure_input_param( self, procedure_name, input_param, global_flag ):
-        if global_flag:
-            self.scopes[ self.base_scope ][ 'procedures' ][ procedure_name ][ 'input_params' ][ input_param ] = { 'type': '' }
-        else:
-            self.scopes[ self.current_scope_name ][ 'procedures' ][ procedure_name ][ 'input_params' ][ input_param ] = { 'type': '' }
+    def add_procedure_input_param( self, input_param ):
+        parent_scope = self.get_parent_scope( self.current_scope_name )
+        self.scopes[ parent_scope ][ 'procedures' ][ self.current_scope_name ][ 'input_params' ][ input_param ] = { 'type': '', 'is_array': False, 'array_length': 0 }
 
 
-    def add_procedure_input_param_type( self, procedure_name, input_param, input_type, global_flag ):
-        if global_flag:
-            self.scopes[ self.base_scope ][ 'procedures' ][ procedure_name ][ 'input_params' ][ input_param ][ 'type' ] = input_type
-        else:
-            self.scopes[ self.current_scope_name ][ 'procedures' ][ procedure_name ][ 'input_params' ][ input_param ][ 'type' ] = input_type
+    def add_procedure_input_param_type( self, input_param, input_type ):
+        parent_scope = self.get_parent_scope( self.current_scope_name )
+        self.scopes[ parent_scope ][ 'procedures' ][ self.current_scope_name ][ 'input_params' ][ input_param ][ 'type' ] = input_type
+
+
+    def add_procedure_input_param_array_type( self, input_param, array_length ):
+        parent_scope = self.get_parent_scope( self.current_scope_name )
+        self.scopes[ parent_scope ][ 'procedures' ][ self.current_scope_name ][ 'input_params' ][ input_param ][ 'is_array' ] = True
+        self.scopes[ parent_scope ][ 'procedures' ][ self.current_scope_name ][ 'input_params' ][ input_param ][ 'array_length' ] = array_length
 
 
     def get_parent_scope( self, child_scope_name ):
-        return self.scopes[ child_scope_name ].parent
+        return self.scopes[ child_scope_name ][ 'parent' ]
 
 
-    def is_variable_in_scope( self, variable_name, search_scope ):
+    def is_variable_in_scope( self, variable_name, search_scope=None ):
         if search_scope == None:
             search_scope = self.current_scope_name
         
         if self.scopes[ search_scope ]:
-            if self.scopes[ search_scope ][ 'variables' ][ variable_name ]: 
+            if variable_name in self.scopes[ search_scope ][ 'variables' ]: 
                 return True
             else:
                 parent_scope = self.get_parent_scope( search_scope )
@@ -99,12 +104,12 @@ class Scoper:
         return False
 
 
-    def is_procedure_in_scope( self, procedure_name, search_scope ):
+    def is_procedure_in_scope( self, procedure_name, search_scope=None ):
         if search_scope == None:
             search_scope = self.current_scope_name
         
         if self.scopes[ search_scope ]:
-            if self.scopes[ search_scope ][ 'procedures' ][ procedure_name ]: 
+            if procedure_name in self.scopes[ search_scope ][ 'procedures' ]: 
                 return True
             else:
                 parent_scope = self.get_parent_scope( search_scope )
@@ -113,15 +118,31 @@ class Scoper:
         return False
     
 
-    def is_variable_in_current_scope( self, variable_name ):
+    def is_variable_in_current_scope( self, variable_name, global_flag ):
+        if global_flag:
+            if self.scopes[ self.base_scope ]:
+                if variable_name in self.scopes[ self.base_scope ][ 'variables' ]:
+                    return True
+            return False
+
         if self.scopes[ self.current_scope_name ]:
-            if self.scopes[ self.current_scope_name ][ 'variables' ][ variable_name ]:
+            if variable_name in self.scopes[ self.current_scope_name ][ 'variables' ]:
                 return True
         return False
     
 
-    def is_procedure_in_current_scope( self, procedure_name ):
+    def is_procedure_in_current_scope( self, procedure_name, global_flag ):
+        if global_flag:
+            if self.scopes[ self.base_scope ]:
+                if procedure_name in self.scopes[ self.base_scope ][ 'procedures' ]:
+                    return True
+            return False
+
         if self.scopes[ self.current_scope_name ]:
             if procedure_name in self.scopes[ self.current_scope_name ][ 'procedures' ]:
                 return True
         return False
+
+    
+    def add_built_in_functions( self ):
+        self.scopes[ self.base_scope ][ 'procedures' ] = built_in_functions
