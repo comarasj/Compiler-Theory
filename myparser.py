@@ -10,6 +10,7 @@ import re
 # Imported file classes
 import tokens
 from scoper import Scoper
+from symbol import Symbol
 
 class Parser:
 
@@ -321,13 +322,21 @@ class Parser:
 
 
     def assignment_statement( self ):
-        if not self.destination():
+        dest = Symbol()
+
+        if not self.destination( dest ):
             return False
         if not self.is_token_type( tokens.t_assignment ):
             return False
         self.next_token()
-        if not self.expression():
+
+        expr = Symbol()
+        if not self.expression( expr ):
             return False
+        
+        # Type check for compatibility
+
+
         return True
 
 
@@ -338,8 +347,13 @@ class Parser:
         if not self.is_token_type( tokens.t_lparen ):
             return False
         self.next_token()
-        if not self.expression():
+
+        expr = Symbol()
+        if not self.expression( expr ):
             return False
+        
+        # Type check expression resolves to bool
+
         if not self.is_token_type( tokens.t_rparen ):
             return False
         self.next_token()
@@ -380,8 +394,13 @@ class Parser:
         if not self.is_token_type( tokens.t_semicolon ):
             return False
         self.next_token()
-        if not self.expression():
+
+        expr = Symbol()
+        if not self.expression( expr ):
             return False
+        
+        # Type check expression resolves to bool
+
         if not self.is_token_type( tokens.t_rparen ):
             return False
         self.next_token()
@@ -406,19 +425,25 @@ class Parser:
         if not self.is_token_type( tokens.t_return ):
             return False
         self.next_token()
-        if not self.expression():
+        
+        expr = Symbol()
+        if not self.expression( expr ):
             return False
+        
+        # Type check that return is the same as procedure return
+
         return True
 
 
-    def destination( self ):
+    def destination( self, dest ):
         if not self.is_token_type( tokens.t_identifier ):
             return False
         self.next_token()
         
         if self.is_token_type( tokens.t_lbracket ):
             self.next_token()
-            if not self.expression():
+            idx = Symbol()
+            if not self.expression( idx ):
                 return False
             self.next_token()
 
@@ -427,61 +452,72 @@ class Parser:
         return True
 
 
-    def expression( self ):
+    def expression( self, expr ):
         if self.is_token_type( tokens.t_not ):
            self.next_token()
-           if not self.arithOp():
+           if not self.arithOp( expr ):
                return False
-        elif not self.arithOp():
+        elif not self.arithOp( expr ):
             return False
 
-        if not self.expression_prime():
+        if not self.expression_prime( expr ):
             return False
         return True
     
 
-    def expression_prime( self ):
+    def expression_prime( self, expr ):
         if self.is_token_type( tokens.t_and ) or self.is_token_type( tokens.t_or ):
             self.next_token()
-            if not self.arithOp():
+
+            rhs = Symbol()
+            if not self.arithOp( rhs ):
                 return False
+            
+            if not self.type_check_expression( expr, rhs, '' ):
+                return False
+
             self.next_token()
-            if not expression_prime():
+            if not expression_prime( expr ):
                 return False
         return True
 
 
-    def arithOp( self ):
-        if not self.relation():
+    def arithOp( self, arOp ):
+        if not self.relation( arOp ):
             return False
 
-        if not self.arithOp_prime():
+        if not self.arithOp_prime( arOp ):
             return False
         
         return True
     
 
-    def arithOp_prime( self ):
+    def arithOp_prime( self, arOp ):
         if self.is_token_type( tokens.t_add ) or self.is_token_type( tokens.t_subtract ):
             self.next_token()
-            if not self.relation():
+
+            rhs = Symbol()
+            if not self.relation( rhs ):
                 return False
 
-            if not self.arithOp_prime():
+            if not self.type_check_arithmetic( arOp, rhs, '' ):
+                return False
+
+            if not self.arithOp_prime( arOp ):
                 return False
         return True
 
 
-    def relation( self ):
-        if not self.term():
+    def relation( self, rel ):
+        if not self.term( rel ):
             return False
 
-        if not self.relation_prime():
+        if not self.relation_prime( rel ):
             return False
         return True
     
 
-    def relation_prime( self ):
+    def relation_prime( self, rel ):
         if ( self.is_token_type( tokens.t_equal_to ) or
              self.is_token_type( tokens.t_not_equal_to ) or
              self.is_token_type( tokens.t_greater_than ) or
@@ -490,37 +526,43 @@ class Parser:
              self.is_token_type( tokens.t_less_than_or_equal_to ) ):
 
             self.next_token()
-            if not self.term():
+            if not self.term( rel ):
                 return False
-            if not self.relation_prime():
+            if not self.relation_prime( rel ):
                 return False
         return True
     
 
-    def term( self ):
-        if not self.factor():
+    def term( self, term ):
+        if not self.factor( term ):
             return False
 
-        if not self.term_prime():
+        if not self.term_prime( term ):
             return False
         return True
 
 
-    def term_prime( self ):
+    def term_prime( self, term ):
         if self.is_token_type( tokens.t_multiply ) or self.is_token_type( tokens.t_divide ):
             self.next_token()
-            if not self.factor():
+
+            rhs = Symbol()
+            if not self.factor( rhs ):
                 return False
+            
+            if not self.type_check_arithmetic( term, rhs, '' ):
+                return False
+
             self.next_token()
-            if not self.term_prime():
+            if not self.term_prime( term ):
                 return False
         return True
     
 
-    def factor( self ):
+    def factor( self, factor ):
         if self.is_token_type( tokens.t_lparen ):
             self.next_token()
-            if not self.expression():
+            if not self.expression( factor ):
                 return False
             if not self.is_token_type( tokens.t_rparen ):
                 return False
@@ -530,11 +572,12 @@ class Parser:
                 return False
         elif self.procedure_call_or_name():
             pass
-        elif self.number():
+        elif self.number( factor ):
             self.next_token()
-        elif self.string():
+        elif self.string( factor ):
             self.next_token()
         elif self.is_token_type( tokens.t_true ) or self.is_token_type( tokens.t_false ):
+            factor.type = 'BOOL'
             self.next_token()
         else:
             return False
@@ -572,17 +615,22 @@ class Parser:
 
     #TODO come back to me
     def argument_list( self ):
-        if not self.expression():
+
+        arg = Symbol()
+
+        if not self.expression( arg ):
             return False
         while( self.is_token_type( tokens.t_comma ) ):
-            if not self.expression():
+            arg_p = Symbol()
+            if not self.expression( arg_p ):
                 return False
 
 
     def name( self ):
         if self.is_token_type( tokens.t_lbracket ):
             self.next_token()
-            if not self.expression():
+            idx = Symbol()
+            if not self.expression( idx ):
                 return False
             if not self.is_token_type( tokens.t_rbracket ):
                 return False
@@ -590,14 +638,42 @@ class Parser:
         return True
 
 
-    def number( self ):
+    def number( self, num ):
         if not self.is_token_type( tokens.t_number ):
             return False
+        if type( self.current_token.text ) is float:
+            num.type = 'FLOAT'
+        elif type( self.current_token.text ) is int:
+            num.type = 'INT'
         return True
     
 
-    def string( self ):
+    def string( self, string ):
         #TODO come back to me
         if not self.is_token_type( tokens.t_identifier ):
             return False
+        string.type = 'STRING'
+        return True
+    
+
+    def type_check_expression( self, lhs, rhs, operator ):
+        return True
+
+
+    def type_check_arithmetic( self, lhs, rhs, operator ):
+        if ( lhs.type != 'INT' and lhs.type != 'FLOAT' ) or ( rhs.type != 'INT' and rhs.type != 'FLOAT' ):
+            # They are not corrent type
+            return False
+        if ( lhs.is_array and not lhs.is_indexed_array ) or ( lhs.is_array and not lhs.is_indexed_array ):
+            #array stuff
+            pass
+        elif lhs.type == 'INT' and rhs.type == 'FLOAT':
+            # valid
+            # Code gen stuff
+            pass
+        elif lhs.type == 'FLOAT' and rhs.type == 'INT':
+            # valid
+            # Code gen stuff
+            pass
+        # Both are the same type
         return True
