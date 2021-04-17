@@ -93,7 +93,10 @@ class Parser:
     def bound( self ):
         if not self.is_token_type( tokens.t_number ):
             return False
-        return True
+        number_val = self.current_token.text
+        if type( number_val ) is int and number_val >= 0:
+            return True
+        return False
 
 
     def program_body( self ):

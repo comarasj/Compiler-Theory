@@ -114,8 +114,7 @@ operator_tokens = [
     t_lbracket,
     t_rbracket,
     t_and,
-    t_or,
-    t_period
+    t_or
 ]
 
 

@@ -8,7 +8,7 @@
 import re
 
 # Imported file classes
-from tokens import operator_tokens, keyword_tokens, Token, t_comment, t_comment_start, t_comment_end
+from tokens import operator_tokens, keyword_tokens, Token, t_comment, t_comment_start, t_comment_end, t_period, t_program
 
 class Scanner:
     def __init__( self, input_file, logger ):
@@ -18,15 +18,21 @@ class Scanner:
         self.logger = logger
         self.logger.set_origin( 'Scanner' )
 
+
     def make_token( self, part ):
         if isinstance( part, Token ):
             return part
+        elif re.fullmatch( "[0-9]+\.[0-9]*", part ):
+            return Token( "number", float( part ), self.line_count )
         elif re.fullmatch( "[0-9]*", part ):
-            return Token( "number", part, self.line_count )
+            return Token( "number", int( part ), self.line_count )
         elif re.fullmatch( "[a-zA-Z_][a-zA-Z0-9_]*", part ):
             return Token( "identifier", part, self.line_count )
+        elif t_period.text == part:
+            return Token( t_period.name, t_period.text, self.line_count )
         else:
             raise Exception( 'Scanning Error: Line #{} Idenifiers may not begin with numbers'.format( self.line_count ) )
+
 
     def read( self ):
         # open input file
@@ -79,13 +85,25 @@ class Scanner:
                     if isinstance( part, str ):
                         split = part.split( keyword.text )
                         keyword_found = True
-                        for s in split:
-                            if s != '':
-                                keyword_found = False
-                        if keyword_found:
-                            new_parts.append( Token( keyword.name, keyword.text, self.line_count ) )
+                        if keyword == t_program:
+                            for s in split:
+                                if s == '':
+                                    if keyword_found:
+                                        keyword_found = False
+                                        new_parts.append( Token( keyword.name, keyword.text, self.line_count ) )
+                                elif s == t_period.text:
+                                    new_parts.append( Token( t_period.name, t_period.text, self.line_count ) )
+                                else:
+                                    new_parts.append( part )
+
                         else:
-                            new_parts.append( part )
+                            for s in split:
+                                if s != '':
+                                    keyword_found = False
+                            if keyword_found:
+                                new_parts.append( Token( keyword.name, keyword.text, self.line_count ) )
+                            else:
+                                new_parts.append( part )
                     else:
                         new_parts.append( part )
                 parts = new_parts
