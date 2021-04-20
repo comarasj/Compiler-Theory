@@ -70,9 +70,9 @@ class Scoper:
             self.scopes[ self.current_scope_name ][ 'procedures' ][ procedure_name ][ 'type' ] = procedure_type
 
 
-    def add_procedure_input_param( self, input_param ):
+    def add_procedure_input_param( self, input_param, index ):
         parent_scope = self.get_parent_scope( self.current_scope_name )
-        self.scopes[ parent_scope ][ 'procedures' ][ self.current_scope_name ][ 'input_params' ][ input_param ] = { 'type': '', 'is_array': False, 'array_length': 0 }
+        self.scopes[ parent_scope ][ 'procedures' ][ self.current_scope_name ][ 'input_params' ][ input_param ] = { 'type': '', 'is_array': False, 'array_length': 0, 'index': index }
 
 
     def add_procedure_input_param_type( self, input_param, input_type ):
@@ -177,7 +177,21 @@ class Scoper:
                 parent_scope = self.get_parent_scope( search_scope )
                 if not parent_scope == None:
                     self.get_var_type( var_name, symbol, parent_scope )
-    
+
+
+    def get_procedure_args( self, id, search_scope=None ):
+        if search_scope == None:
+            search_scope = self.current_scope_name
+        
+        if self.scopes[ search_scope ]:
+            if id in self.scopes[ search_scope ][ 'procedures' ]: 
+                return self.scopes[ search_scope ][ 'procedures' ][ id ][ 'input_params' ]
+            else:
+                parent_scope = self.get_parent_scope( search_scope )
+                if not parent_scope == None:
+                    return self.get_procedure_args( id, parent_scope )
+        return None
+
 
     def convert_type( self, type1 ):
         if type1 == 'integer':

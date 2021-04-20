@@ -141,7 +141,8 @@ built_in_functions = {
             'value': { 
                 'type': 'bool', 
                 'is_array': False, 
-                'array_length': 0 
+                'array_length': 0,
+                'index': 0
             }
         }
     },
@@ -151,7 +152,8 @@ built_in_functions = {
             'value': { 
                 'type': 'integer', 
                 'is_array': False, 
-                'array_length': 0 
+                'array_length': 0,
+                'index': 0
             }
         }
     },
@@ -161,7 +163,8 @@ built_in_functions = {
             'value': { 
                 'type': 'float', 
                 'is_array': False, 
-                'array_length': 0 
+                'array_length': 0,
+                'index': 0
             }
         }
     },
@@ -171,7 +174,8 @@ built_in_functions = {
             'value': { 
                 'type': 'string', 
                 'is_array': False, 
-                'array_length': 0 
+                'array_length': 0,
+                'index': 0
             }
         }
     },
@@ -181,7 +185,8 @@ built_in_functions = {
             'value': { 
                 'type': 'integer', 
                 'is_array': False, 
-                'array_length': 0 
+                'array_length': 0,
+                'index': 0
             }
         }
     }

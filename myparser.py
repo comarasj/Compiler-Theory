@@ -249,20 +249,21 @@ class Parser:
 
     def parameter_list( self, procedure_name, global_flag ):
         if not self.is_token_type( tokens.t_rparen ):
+            param_idx = 0
             while( True ):
-                self.parameter()
+                self.parameter( param_idx )
                 if not self.is_token_type( tokens.t_comma ):
                     break
                 self.next_token()
         return True
 
 
-    def parameter( self ):
-        if not self.variable_declaration( False, True ):
+    def parameter( self, param_idx ):
+        if not self.variable_declaration( False, True, param_idx ):
             return False
 
 
-    def variable_declaration( self, global_flag, input_param_flag ):
+    def variable_declaration( self, global_flag, input_param_flag, param_idx=None ):
         if not self.is_token_type( tokens.t_variable ):
             return False
         self.next_token()
@@ -275,7 +276,7 @@ class Parser:
         
         self.scoper.add_variable( var_name, global_flag )
         if input_param_flag:
-            self.scoper.add_procedure_input_param( var_name )
+            self.scoper.add_procedure_input_param( var_name, param_idx )
         self.next_token()
 
         if not self.is_token_type( tokens.t_colon ):
@@ -357,6 +358,9 @@ class Parser:
             return False
         
         # Type check expression resolves to bool
+        if expr.type != 'INT' and expr.type != 'BOOL':
+            self.logger.report_error( 'If statement expression did not resolve to a boolean', self.current_token.line_number )
+            return False
 
         if not self.is_token_type( tokens.t_rparen ):
             return False
@@ -404,6 +408,10 @@ class Parser:
             return False
         
         # Type check expression resolves to bool
+        if expr.type != 'INT' and expr.type != 'BOOL':
+            self.logger.report_error( 'Loop statement expression did not resolve to a boolean', self.current_token.line_number )
+            return False
+
 
         if not self.is_token_type( tokens.t_rparen ):
             return False
@@ -434,7 +442,14 @@ class Parser:
         if not self.expression( expr ):
             return False
         
+        proc = Symbol()
+        proc_name = self.scoper.current_scope_name
+        self.scoper.get_proc_type( proc_name, proc )
+
         # Type check that return is the same as procedure return
+        if not self.type_check_compatibility( proc, expr ):
+            self.logger.report_error( 'Return type does not match procedure type', self.current_token.line_number )
+            return False
 
         return True
 
@@ -450,19 +465,30 @@ class Parser:
             idx = Symbol()
             if not self.expression( idx ):
                 return False
-            # self.next_token()
+            
+            if not dest.is_array:
+                self.logger.report_error( 'Variable is not an array and cannot be indexed', self.current_token.line_number )
+                return False
+
+            if idx.type != 'INT':
+                self.logger.report_error( 'Array must be indexed by an integer', self.current_token.line_number )
+                return False
+
 
             if not self.is_token_type( tokens.t_rbracket ):
                 return False
-            self.next_token()     
+            self.next_token()
+            dest.is_indexed_array = True   
         return True
 
 
     def expression( self, expr ):
         if self.is_token_type( tokens.t_not ):
-           self.next_token()
-           if not self.arithOp( expr ):
-               return False
+            self.next_token()
+            if not self.arithOp( expr ):
+                return False
+            if expr.type != 'INT' and expr.type != 'BOOL':
+                self.logger.report_error( 'Not is only supported for bool and int', self.current_token.line_number )
         elif not self.arithOp( expr ):
             return False
 
@@ -479,6 +505,7 @@ class Parser:
             if not self.arithOp( rhs ):
                 return False
             
+            # Type check for expressions operators like ( & | )
             if not self.type_check_expression( expr, rhs, '' ):
                 return False
 
@@ -505,7 +532,8 @@ class Parser:
             rhs = Symbol()
             if not self.relation( rhs ):
                 return False
-
+            
+            # Type check for aritmetic operators like ( + - )
             if not self.type_check_arithmetic( arOp, rhs, '' ):
                 return False
 
@@ -532,8 +560,15 @@ class Parser:
              self.is_token_type( tokens.t_less_than_or_equal_to ) ):
 
             self.next_token()
-            if not self.term( rel ):
+
+            rhs = Symbol()
+            if not self.term( rhs ):
                 return False
+            
+            # Type check for relation operators like ( > < = )
+            if not self.type_check_relation( rel, rhs, '' ):
+                return False
+
             if not self.relation_prime( rel ):
                 return False
         return True
@@ -556,6 +591,7 @@ class Parser:
             if not self.factor( rhs ):
                 return False
             
+            # Type check for term operators like ( * / ) - same rules apply here as arithmetics
             if not self.type_check_arithmetic( term, rhs, '' ):
                 return False
 
@@ -578,6 +614,19 @@ class Parser:
                 return False
         elif self.procedure_call_or_name( factor ):
             pass
+        elif self.is_token_type( tokens.t_subtract ):
+            # Negative number
+            self.next_token()
+            if name( factor ) or number( factor ):
+                if factor.type != 'INT' and factor.type != 'FLOAT':
+                    self.logger.report_error( 'Minus/negative operator only supported for numbers', self.current_token.line_number )
+                    return False
+            else:
+                self.logger.report_error( 'Invalid minus/negative operator', self.current_token.line_number )
+                return False
+            
+            self.next_token()
+
         elif self.number( factor ):
             self.next_token()
         elif self.string( factor ):
@@ -595,6 +644,7 @@ class Parser:
             return False
 
         identifier_name = self.current_token.text
+        iden.id = identifier_name
         # Scope Checking
         proc = self.scoper.is_procedure_in_scope( identifier_name )
         var = self.scoper.is_variable_in_scope( identifier_name )
@@ -603,15 +653,14 @@ class Parser:
             return False
         identifier_type = ''
         if proc:
-            identifier_type = self.scoper.get_proc_type( identifier_name, iden )
+            identifier_type = self.scoper.get_proc_type( identifier_name, iden ) 
         else:
             identifier_type = self.scoper.get_var_type( identifier_name, iden )
 
-        
         self.next_token()
         if self.is_token_type( tokens.t_lparen ):
             self.next_token()
-            if not self.procedure_call():
+            if not self.procedure_call( iden ):
                 return False
             if not self.is_token_type( tokens.t_rparen ):
                 return False
@@ -621,23 +670,52 @@ class Parser:
         return True
 
 
-    def procedure_call( self ):
-        if self.argument_list():
-            pass
+    def procedure_call( self, proc ):
+        if not self.argument_list( proc ):
+            return False
         return True
 
     #TODO come back to me
-    def argument_list( self ):
-
+    def argument_list( self, proc ):
+        index = 0
         arg = Symbol()
-
+        procedure_args = self.scoper.get_procedure_args( proc.id )
         if not self.expression( arg ):
+            if len( procedure_args ) != 0:
+                logger.report_error( 'Too few procedure arguments provided', self.current_token.line_number )
             return False
+
+        parameter_symbol = self.get_indexed_arg( procedure_args, index )
+
+        if not self.type_check_compatibility( arg, parameter_symbol ):
+            self.logger.report_error( 'Provided procedure argument does not match defined procedure parameter type', self.current_token.line_number )
+            return False
+
+        index = index + 1
+
         while( self.is_token_type( tokens.t_comma ) ):
+            self.next_token()
             arg_p = Symbol()
             if not self.expression( arg_p ):
+                self.logger.report_error( 'Invalid argument expression', self.current_token.line_number )
+                return False
+            
+            if index >= len( procedure_args ):
+                self.logger.report_error( 'Too many arguments provided', self.current_token.line_number )
+                return False
+            
+            parameter_symbol = self.get_indexed_arg( procedure_args, index )
+
+            if not self.type_check_compatibility( arg_p, parameter_symbol ):
+                self.logger.report_error( 'Provided procedure argument does not match defined procedure parameter type', self.current_token.line_number )
                 return False
 
+            index = index + 1
+
+        if index != len( procedure_args ):
+            self.logger.report_error( 'Too few procedure arguments provided', self.current_token.line_number )
+
+        return True
 
     def name( self, iden ):
         if self.is_token_type( tokens.t_lbracket ):
@@ -645,6 +723,15 @@ class Parser:
             idx = Symbol()
             if not self.expression( idx ):
                 return False
+
+            if not iden.is_array:
+                self.logger.report_error( 'Variable is not an array and cannot be indexed', self.current_token.line_number )
+                return False
+
+            if idx.type != 'INT':
+                self.logger.report_error( 'Array must be indexed by an integer', self.current_token.line_number )
+                return False
+
             if not self.is_token_type( tokens.t_rbracket ):
                 return False
             self.next_token()
@@ -713,8 +800,6 @@ class Parser:
                     return False
             return True
 
-
-
         if dest.type == expr.type:
             return True
 
@@ -733,4 +818,17 @@ class Parser:
                 return True
 
         return False
-    
+
+
+    def type_check_relation( self, lhs, rhs, op ):
+        return True
+
+
+
+    def get_indexed_arg( self, procedure_args, index ):
+        arg = Symbol()
+        for parameter in procedure_args:
+            if procedure_args[ parameter ][ 'index' ] == index:
+                arg.id = parameter
+                arg.type = self.scoper.convert_type( procedure_args[ parameter ][ 'type' ] )
+        return arg
