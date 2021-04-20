@@ -146,3 +146,45 @@ class Scoper:
     
     def add_built_in_functions( self ):
         self.scopes[ self.base_scope ][ 'procedures' ] = built_in_functions
+    
+
+    def get_proc_type( self, procedure_name, symbol, search_scope=None ):
+        if search_scope == None:
+            search_scope = self.current_scope_name
+        
+        if self.scopes[ search_scope ]:
+            if procedure_name in self.scopes[ search_scope ][ 'procedures' ]: 
+                proc_type = self.scopes[ search_scope ][ 'procedures' ][ procedure_name ][ 'type' ]
+                symbol.type = self.convert_type( proc_type )
+            else:
+                parent_scope = self.get_parent_scope( search_scope )
+                if not parent_scope == None:
+                    self.get_proc_type( procedure_name, symbol, parent_scope )
+
+
+    def get_var_type( self, var_name, symbol, search_scope=None ):
+        if search_scope == None:
+            search_scope = self.current_scope_name
+        
+        if self.scopes[ search_scope ]:
+            if var_name in self.scopes[ search_scope ][ 'variables' ]: 
+                var = self.scopes[ search_scope ][ 'variables' ][ var_name ]
+                symbol.type = self.convert_type( var[ 'type' ] )
+                if 'is_array' in var:
+                    symbol.is_array = True
+                    symbol.array_length = var[ 'array_length' ]
+            else:
+                parent_scope = self.get_parent_scope( search_scope )
+                if not parent_scope == None:
+                    self.get_var_type( var_name, symbol, parent_scope )
+    
+
+    def convert_type( self, type1 ):
+        if type1 == 'integer':
+            return 'INT'
+        elif type1 == 'float':
+            return 'FLOAT'
+        elif type1 == 'string':
+            return 'STRING'
+        elif type1 == 'boolean':
+            return 'BOOL'

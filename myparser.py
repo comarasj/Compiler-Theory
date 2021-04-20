@@ -93,10 +93,12 @@ class Parser:
 
     def bound( self ):
         if not self.is_token_type( tokens.t_number ):
+            self.logger.report_error( 'Invalid bound, must be number', self.current_token.line_number )
             return False
         number_val = self.current_token.text
         if type( number_val ) is int and number_val >= 0:
             return True
+        self.logger.report_error( 'Invalid bound, must be positive integer', self.current_token.line_number )
         return False
 
 
@@ -335,7 +337,9 @@ class Parser:
             return False
         
         # Type check for compatibility
-
+        if not self.type_check_compatibility( dest, expr ):
+            self.logger.report_error( 'Invalid assignment, types do not match', self.current_token.line_number )
+            return False
 
         return True
 
@@ -438,6 +442,7 @@ class Parser:
     def destination( self, dest ):
         if not self.is_token_type( tokens.t_identifier ):
             return False
+        self.scoper.get_var_type( self.current_token.text, dest )
         self.next_token()
         
         if self.is_token_type( tokens.t_lbracket ):
@@ -445,10 +450,11 @@ class Parser:
             idx = Symbol()
             if not self.expression( idx ):
                 return False
-            self.next_token()
+            # self.next_token()
 
             if not self.is_token_type( tokens.t_rbracket ):
-                return False     
+                return False
+            self.next_token()     
         return True
 
 
@@ -570,7 +576,7 @@ class Parser:
             self.next_token()
             if not self.number() and not self.string():
                 return False
-        elif self.procedure_call_or_name():
+        elif self.procedure_call_or_name( factor ):
             pass
         elif self.number( factor ):
             self.next_token()
@@ -584,7 +590,7 @@ class Parser:
         return True
 
 
-    def procedure_call_or_name( self ):
+    def procedure_call_or_name( self, iden ):
         if not self.identifier():
             return False
 
@@ -595,6 +601,13 @@ class Parser:
         if not self.scoper.is_procedure_in_scope( identifier_name ) and not self.scoper.is_variable_in_scope( identifier_name ):
             self.logger.report_error( '{} does not exist in scope'.format( identifier_name ), self.current_token.line_number )
             return False
+        identifier_type = ''
+        if proc:
+            identifier_type = self.scoper.get_proc_type( identifier_name, iden )
+        else:
+            identifier_type = self.scoper.get_var_type( identifier_name, iden )
+
+        
         self.next_token()
         if self.is_token_type( tokens.t_lparen ):
             self.next_token()
@@ -603,7 +616,7 @@ class Parser:
             if not self.is_token_type( tokens.t_rparen ):
                 return False
             self.next_token()
-        elif not self.name():
+        elif not self.name( iden ):
             return False
         return True
 
@@ -626,7 +639,7 @@ class Parser:
                 return False
 
 
-    def name( self ):
+    def name( self, iden ):
         if self.is_token_type( tokens.t_lbracket ):
             self.next_token()
             idx = Symbol()
@@ -635,6 +648,7 @@ class Parser:
             if not self.is_token_type( tokens.t_rbracket ):
                 return False
             self.next_token()
+            iden.is_indexed_array = True
         return True
 
 
@@ -677,3 +691,46 @@ class Parser:
             pass
         # Both are the same type
         return True
+    
+
+    def type_check_compatibility( self, dest, expr ):
+        # 727
+        if dest.is_array or expr.is_array:
+            if dest.is_array and expr.is_array:
+                if dest.is_indexed_array != expr.is_indexed_array:
+                    self.logger.report_error( 'Arrays must be indexed or unindexed', self.current_token.line_number )
+                    return False
+                elif not dest.is_indexed_array:
+                    if dest.array_length != expr.array_length:
+                        self.logger.report_error( 'Arrays must be same length', self.current_token.line_number )
+                        return False
+                else:
+                    if dest.type != expr.type:
+                        return False
+            else:
+                if ( dest.is_array and not dest.is_indexed_array ) or ( expr.is_array and not expr.is_indexed_array ):
+                    self.logger.report_error( 'Array must be indexed', self.current_token.line_number )
+                    return False
+            return True
+
+
+
+        if dest.type == expr.type:
+            return True
+
+        elif dest.type == 'INT':
+            if expr.type == 'FLOAT':
+                return True
+            elif expr.type == 'BOOL':
+                return True
+
+        elif dest.type == 'FLOAT':
+            if expr.type == 'INT':
+                return True
+
+        elif dest.type == 'BOOL':
+            if expr.type == 'INT':
+                return True
+
+        return False
+    
