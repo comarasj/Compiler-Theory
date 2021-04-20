@@ -559,6 +559,7 @@ class Parser:
              self.is_token_type( tokens.t_less_than ) or
              self.is_token_type( tokens.t_less_than_or_equal_to ) ):
 
+            op = self.current_token.text
             self.next_token()
 
             rhs = Symbol()
@@ -566,7 +567,7 @@ class Parser:
                 return False
             
             # Type check for relation operators like ( > < = )
-            if not self.type_check_relation( rel, rhs, '' ):
+            if not self.type_check_relation( rel, rhs, op ):
                 return False
 
             if not self.relation_prime( rel ):
@@ -758,16 +759,27 @@ class Parser:
     
 
     def type_check_expression( self, lhs, rhs, operator ):
-        return True
+        if lhs.type == 'BOOL' and rhs.type == 'BOOL':
+            return True
+        elif lhs.type == 'INT' and rhs.type == 'INT':
+            return True
+
+        elif ( lhs.is_array and not lhs.is_indexed_array ) and ( rhs.is_array and not rhs.is_indexed_array ):
+            if lhs.array_length != rhs.array_length:
+                self.logger.report_error( 'When doing operations on arrays, array must be the same size', self.current_token.line_number )
+                return False
+        self.logger.report_error( 'Invalid expression types', self.current_token.line_number )
+        return False
 
 
     def type_check_arithmetic( self, lhs, rhs, operator ):
         if ( lhs.type != 'INT' and lhs.type != 'FLOAT' ) or ( rhs.type != 'INT' and rhs.type != 'FLOAT' ):
             # They are not corrent type
             return False
-        if ( lhs.is_array and not lhs.is_indexed_array ) or ( lhs.is_array and not lhs.is_indexed_array ):
-            #array stuff
-            pass
+        elif ( lhs.is_array and not lhs.is_indexed_array ) and ( rhs.is_array and not rhs.is_indexed_array ):
+            if lhs.array_length != rhs.array_length:
+                self.logger.report_error( 'When doing operations on arrays, array must be the same size', self.current_token.line_number )
+                return False
         elif lhs.type == 'INT' and rhs.type == 'FLOAT':
             # valid
             # Code gen stuff
@@ -781,7 +793,6 @@ class Parser:
     
 
     def type_check_compatibility( self, dest, expr ):
-        # 727
         if dest.is_array or expr.is_array:
             if dest.is_array and expr.is_array:
                 if dest.is_indexed_array != expr.is_indexed_array:
@@ -821,8 +832,32 @@ class Parser:
 
 
     def type_check_relation( self, lhs, rhs, op ):
-        return True
-
+        if ( lhs.is_array and not lhs.is_indexed_array ) and ( rhs.is_array and not rhs.is_indexed_array ):
+            if lhs.array_length != rhs.array_length:
+                self.logger.report_error( 'When doing operations on arrays, array must be the same size', self.current_token.line_number )
+                return False
+        elif lhs.type == 'INT':
+            if rhs.type == 'BOOl':
+                return True
+            elif rhs.type == 'FLOAT':
+                return True
+            elif rhs.type == 'INT':
+                return True
+        elif lhs.type == 'FLOAT':
+            if rhs.type == 'FLOAT':
+                return True
+            elif rhs.type == 'INT':
+                return True
+        elif lhs.type == 'BOOL':
+            if rhs.type == 'BOOL':
+                return True
+            elif rhs.type == 'INT':
+                return True
+        elif lhs.type == 'STRING':
+            if rhs.type == 'STRING' and ( op == '==' or op == '!=' ):
+                return True
+        self.logger.report_error( 'Types incompatible for relations', self.current_token.line_number )
+        return False
 
 
     def get_indexed_arg( self, procedure_args, index ):
