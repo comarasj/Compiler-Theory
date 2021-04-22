@@ -48,6 +48,7 @@ t_less_than_or_equal_to = Token( 'less than or equal to', '<=' )
 t_equal_to = Token( 'equal to', '==' )
 t_not_equal_to = Token( 'not equal to', '!=' )
 
+t_quote = Token( 'quote', '"')
 t_greater_than = Token( 'greater than', '>' )
 t_less_than = Token( 'less than', '<' )
 t_comma = Token( 'comma', ',' )
@@ -114,7 +115,8 @@ operator_tokens = [
     t_lbracket,
     t_rbracket,
     t_and,
-    t_or
+    t_or,
+    t_quote
 ]
 
 

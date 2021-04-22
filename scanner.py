@@ -28,6 +28,8 @@ class Scanner:
             return Token( "number", int( part ), self.line_count )
         elif re.fullmatch( "[a-zA-Z_][a-zA-Z0-9_]*", part ):
             return Token( "identifier", part, self.line_count )
+        elif re.fullmatch( '[^"]*', part ):
+            return Token( "string", part, self.line_count )
         elif t_period.text == part:
             return Token( t_period.name, t_period.text, self.line_count )
         else:
@@ -85,23 +87,30 @@ class Scanner:
                     if isinstance( part, str ):
                         split = part.split( keyword.text )
                         keyword_found = True
-                        if keyword == t_program:
-                            for s in split:
-                                if s == '':
-                                    if keyword_found:
-                                        keyword_found = False
-                                        new_parts.append( Token( keyword.name, keyword.text, self.line_count ) )
-                                elif s == t_period.text:
-                                    new_parts.append( Token( t_period.name, t_period.text, self.line_count ) )
-                                else:
-                                    new_parts.append( part )
-
+                        #if keyword == t_program:
+                        #    for s in split:
+                        #        found = []
+                        #        if s == '':
+                        #            if keyword_found:
+                        #                keyword_found = False
+                        #                new_parts.append( Token( keyword.name, keyword.text, self.line_count ) )
+                        #        elif s == t_period.text:
+                        #            new_parts.append( Token( t_period.name, t_period.text, self.line_count ) )
+                        #        elif s != '':
+                        #            if not keyword_found:
+                        #                new_parts.pop()
+                        #            new_parts.append( part )
+#
+                        #else:
+                        for s in split:
+                            if s != '':
+                                keyword_found = False
+                        if keyword_found:
+                            new_parts.append( Token( keyword.name, keyword.text, self.line_count ) )
                         else:
-                            for s in split:
-                                if s != '':
-                                    keyword_found = False
-                            if keyword_found:
-                                new_parts.append( Token( keyword.name, keyword.text, self.line_count ) )
+                            if part == 'program.':
+                                new_parts.append( Token( t_program.name, t_program.text, self.line_count ) )
+                                new_parts.append( Token( t_period.name, t_period.text, self.line_count ) )
                             else:
                                 new_parts.append( part )
                     else:

@@ -358,9 +358,9 @@ class Parser:
             return False
         
         # Type check expression resolves to bool
-        if expr.type != 'INT' and expr.type != 'BOOL':
-            self.logger.report_error( 'If statement expression did not resolve to a boolean', self.current_token.line_number )
-            return False
+        # if expr.type != 'INT' and expr.type != 'BOOL':
+        #     self.logger.report_error( 'If statement expression did not resolve to a boolean', self.current_token.line_number )
+        #     return False
 
         if not self.is_token_type( tokens.t_rparen ):
             return False
@@ -375,7 +375,6 @@ class Parser:
             self.next_token()
             if not self.valid_code():
                 return False
-            self.next_token()
 
         if not self.is_token_type( tokens.t_end ):
             return False
@@ -418,7 +417,6 @@ class Parser:
         self.next_token()
         if not self.valid_code():
             return False
-        self.next_token()
 
         if not self.is_token_type( tokens.t_end ):
             return False
@@ -441,7 +439,7 @@ class Parser:
         expr = Symbol()
         if not self.expression( expr ):
             return False
-        
+
         proc = Symbol()
         proc_name = self.scoper.current_scope_name
         self.scoper.get_proc_type( proc_name, proc )
@@ -458,6 +456,7 @@ class Parser:
         if not self.is_token_type( tokens.t_identifier ):
             return False
         self.scoper.get_var_type( self.current_token.text, dest )
+        dest.id = self.current_token.text
         self.next_token()
         
         if self.is_token_type( tokens.t_lbracket ):
@@ -478,7 +477,7 @@ class Parser:
             if not self.is_token_type( tokens.t_rbracket ):
                 return False
             self.next_token()
-            dest.is_indexed_array = True   
+            dest.is_indexed_array = True
         return True
 
 
@@ -609,10 +608,12 @@ class Parser:
                 return False
             if not self.is_token_type( tokens.t_rparen ):
                 return False
+            self.next_token()
         elif self.is_token_type( tokens.t_subtract ):
             self.next_token()
-            if not self.number() and not self.string():
+            if not self.number( factor ) and not self.string( factor ):
                 return False
+            self.next_token()
         elif self.procedure_call_or_name( factor ):
             pass
         elif self.is_token_type( tokens.t_subtract ):
@@ -681,9 +682,12 @@ class Parser:
         index = 0
         arg = Symbol()
         procedure_args = self.scoper.get_procedure_args( proc.id )
+        if len( procedure_args ) == 0 and self.is_token_type( tokens.t_rparen ):
+            return True
+
         if not self.expression( arg ):
             if len( procedure_args ) != 0:
-                logger.report_error( 'Too few procedure arguments provided', self.current_token.line_number )
+                self.logger.report_error( 'Too few procedure arguments provided', self.current_token.line_number )
             return False
 
         parameter_symbol = self.get_indexed_arg( procedure_args, index )
@@ -752,7 +756,13 @@ class Parser:
 
     def string( self, string ):
         #TODO come back to me
+        if not self.is_token_type( tokens.t_quote ):
+            return False
+        self.next_token()
         if not self.is_token_type( tokens.t_identifier ):
+            return False
+        self.next_token()
+        if not self.is_token_type( tokens.t_quote ):
             return False
         string.type = 'STRING'
         return True

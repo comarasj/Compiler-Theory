@@ -171,7 +171,7 @@ class Scoper:
                 var = self.scopes[ search_scope ][ 'variables' ][ var_name ]
                 symbol.type = self.convert_type( var[ 'type' ] )
                 if 'is_array' in var:
-                    symbol.is_array = True
+                    symbol.is_array = var[ 'is_array' ]
                     symbol.array_length = var[ 'array_length' ]
             else:
                 parent_scope = self.get_parent_scope( search_scope )
@@ -200,5 +200,5 @@ class Scoper:
             return 'FLOAT'
         elif type1 == 'string':
             return 'STRING'
-        elif type1 == 'boolean':
+        elif type1 == 'bool':
             return 'BOOL'
