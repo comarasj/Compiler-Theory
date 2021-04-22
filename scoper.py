@@ -33,6 +33,9 @@ class Scoper:
         self.current_scope_name = self.base_scope
 
 
+    def go_to_parent_scope( self ):
+        self.current_scope_name = self.get_parent_scope( self.current_scope_name )
+
     def add_variable( self, variable_name, global_flag ):
         if global_flag:
             self.scopes[ self.base_scope ][ 'variables' ][ variable_name ] = { 'type': '', 'is_array': False, 'array_length': 0 }

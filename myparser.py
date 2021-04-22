@@ -147,7 +147,7 @@ class Parser:
                     return False
                 if not self.is_token_type( tokens.t_semicolon ):
                     return False
-                self.scoper.go_to_base_scope()
+                self.scoper.go_to_parent_scope()
                 self.next_token()
 
             # Check for variables
@@ -595,7 +595,6 @@ class Parser:
             if not self.type_check_arithmetic( term, rhs, '' ):
                 return False
 
-            self.next_token()
             if not self.term_prime( term ):
                 return False
         return True
@@ -759,7 +758,7 @@ class Parser:
         if not self.is_token_type( tokens.t_quote ):
             return False
         self.next_token()
-        if not self.is_token_type( tokens.t_identifier ):
+        if not self.is_token_type( tokens.t_string ):
             return False
         self.next_token()
         if not self.is_token_type( tokens.t_quote ):

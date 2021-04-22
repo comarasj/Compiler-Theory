@@ -8,7 +8,7 @@
 import re
 
 # Imported file classes
-from tokens import operator_tokens, keyword_tokens, Token, t_comment, t_comment_start, t_comment_end, t_period, t_program
+from tokens import operator_tokens, keyword_tokens, Token, t_comment, t_comment_start, t_comment_end, t_period, t_program, t_quote
 
 class Scanner:
     def __init__( self, input_file, logger ):
@@ -28,10 +28,10 @@ class Scanner:
             return Token( "number", int( part ), self.line_count )
         elif re.fullmatch( "[a-zA-Z_][a-zA-Z0-9_]*", part ):
             return Token( "identifier", part, self.line_count )
-        elif re.fullmatch( '[^"]*', part ):
-            return Token( "string", part, self.line_count )
         elif t_period.text == part:
             return Token( t_period.name, t_period.text, self.line_count )
+        elif re.fullmatch( '[^"]*', part ):
+            return Token( "string", part, self.line_count )
         else:
             raise Exception( 'Scanning Error: Line #{} Idenifiers may not begin with numbers'.format( self.line_count ) )
 
@@ -43,9 +43,36 @@ class Scanner:
         for line in lines:
             self.line_count = self.line_count + 1
             # split line by whitespace
-            line = line.lower()
-            parts = re.split( '\s+', line )
+            split = re.split( t_quote.text, line )
+            if len( split ) > 1:
+                # do stuff
+                new_parts = []
+                print( 'here' )
+                count = 0
+                for s in split:
+                    if count % 2 == 0:
+                        new_parts.append( s )
+                    else:
+                        new_parts.append( Token( op.name, op.text, self.line_count ) )
+                        new_parts.append( Token( 'string', s, self.line_count  ) )
+                        new_parts.append( Token( op.name, op.text, self.line_count ) )
 
+                    count = count + 1
+                parts = []
+                for part in new_parts:
+                    if isinstance( part, str ):
+                        part = part.lower()
+                        part = part.strip()
+                        part = re.split( '\s+', part )
+                        for s in part:
+                           parts.append( s ) 
+                    else:
+                        parts.append( part )
+            else:
+                line = line.lower()
+                line = line.strip()
+                parts = re.split( '\s+', line )
+            # Check for operators  
             for op in operator_tokens:
                 if op.text == t_comment.text:
                     comment_flag = False
@@ -81,27 +108,13 @@ class Scanner:
 
                     parts = new_parts
             
+            # Check for keywords
             for keyword in keyword_tokens:
                 new_parts = []
                 for part in parts:
                     if isinstance( part, str ):
                         split = part.split( keyword.text )
                         keyword_found = True
-                        #if keyword == t_program:
-                        #    for s in split:
-                        #        found = []
-                        #        if s == '':
-                        #            if keyword_found:
-                        #                keyword_found = False
-                        #                new_parts.append( Token( keyword.name, keyword.text, self.line_count ) )
-                        #        elif s == t_period.text:
-                        #            new_parts.append( Token( t_period.name, t_period.text, self.line_count ) )
-                        #        elif s != '':
-                        #            if not keyword_found:
-                        #                new_parts.pop()
-                        #            new_parts.append( part )
-#
-                        #else:
                         for s in split:
                             if s != '':
                                 keyword_found = False
@@ -135,5 +148,13 @@ class Scanner:
                 remove_tokens.append( token )
         for token in remove_tokens:
             self.token_list.remove( token )
+        
+        '''
+        quoted_str = []
+        str_tokens = []
+        for token in self.token_list:
+            if token.text == t_quote.text:
+        '''
+
 
         return self.token_list
