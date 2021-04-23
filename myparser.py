@@ -2,7 +2,7 @@
 # EECE 5183 - 001 Compiler Theory 
 # This program is the parser class for the compiler project 
 #
-# myparser.py
+# myparser.py - named myparser because python doesnt like parser keyword
 
 # Imported libraries
 import re, sys
@@ -44,9 +44,11 @@ class Parser:
         self.next_token()
         if self.program():
             if self.resync_flag:
-                print( 'Parse completed with errors please address' )
+                print( 'Parse completed with errors.. Please address issues' )
             else:
-                print( 'Successful Parse!')
+                print( 'Successful Parse!' )
+        else:
+            print( 'Unsuccessful Parse.. Please address issues' )
 
 
     def resync( self, resync_type ):
