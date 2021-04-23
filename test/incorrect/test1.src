@@ -1,11 +1,13 @@
-Program grant is
-    variable JAKE : integer;
-    variable ryan : integer;
-    variable zach : integer;
+
+PROGRAM grant IS
+    global variable JAKE : integer;
+    global variable ryan : integer[3];
+    global variable zach : integer;
     variable tmp : integer;
 
 	procedure if_proc : integer()
-        variable declaration : integer;
+	// this next line should throw a duplicate declaration error.
+        global variable zach : float;
 		begin
 		if(true) then jake := jake + 1;
 		else zach := zach + RYAN[2];

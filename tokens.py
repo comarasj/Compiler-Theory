@@ -48,6 +48,7 @@ t_less_than_or_equal_to = Token( 'less than or equal to', '<=' )
 t_equal_to = Token( 'equal to', '==' )
 t_not_equal_to = Token( 'not equal to', '!=' )
 
+t_quote = Token( 'quote', '"')
 t_greater_than = Token( 'greater than', '>' )
 t_less_than = Token( 'less than', '<' )
 t_comma = Token( 'comma', ',' )
@@ -115,74 +116,79 @@ operator_tokens = [
     t_rbracket,
     t_and,
     t_or,
-    t_period
+    t_quote
 ]
 
 
 built_in_functions = {
     'getbool': { 
-        'type': 'bool', 
-        'input_params': {}
+        'procedure_type': 'bool', 
+        'input_parameters': {}
     },
     'getinteger': { 
-        'type': 'integer', 
-        'input_params': {}
+        'procedure_type': 'integer', 
+        'input_parameters': {}
     },
     'getfloat': { 
-        'type': 'float', 
-        'input_params': {}
+        'procedure_type': 'float', 
+        'input_parameters': {}
     },
     'getstring': { 
-        'type': 'string', 
-        'input_params': {}
+        'procedure_type': 'string', 
+        'input_parameters': {}
     },
     'putbool': { 
-        'type': 'bool', 
-        'input_params': { 
+        'procedure_type': 'bool', 
+        'input_parameters': { 
             'value': { 
-                'type': 'bool', 
+                'variable_type': 'bool', 
                 'is_array': False, 
-                'array_length': 0 
+                'array_length': 0,
+                'index': 0
             }
         }
     },
     'putinteger': { 
-        'type': 'bool', 
-        'input_params': { 
+        'procedure_type': 'bool', 
+        'input_parameters': { 
             'value': { 
-                'type': 'integer', 
+                'variable_type': 'integer', 
                 'is_array': False, 
-                'array_length': 0 
+                'array_length': 0,
+                'index': 0
             }
         }
     },
     'putfloat': { 
-        'type': 'bool', 
-        'input_params': { 
+        'procedure_type': 'bool', 
+        'input_parameters': { 
             'value': { 
-                'type': 'float', 
+                'variable_type': 'float', 
                 'is_array': False, 
-                'array_length': 0 
+                'array_length': 0,
+                'index': 0
             }
         }
     },
     'putstring': { 
-        'type': 'bool', 
-        'input_params': { 
+        'procedure_type': 'bool', 
+        'input_parameters': { 
             'value': { 
-                'type': 'string', 
+                'variable_type': 'string', 
                 'is_array': False, 
-                'array_length': 0 
+                'array_length': 0,
+                'index': 0
             }
         }
     },
     'sqrt': { 
-        'type': 'float', 
-        'input_params': { 
+        'procedure_type': 'float', 
+        'input_parameters': { 
             'value': { 
-                'type': 'integer', 
+                'variable_type': 'integer', 
                 'is_array': False, 
-                'array_length': 0 
+                'array_length': 0,
+                'index': 0
             }
         }
     }
