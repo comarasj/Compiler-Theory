@@ -31,9 +31,10 @@ class Scanner:
         elif t_period.text == part:
             return Token( t_period.name, t_period.text, self.line_count )
         elif re.fullmatch( '[^"]*', part ):
-            return Token( "string", part, self.line_count )
+            return Token( "illegal", part, self.line_count )
         else:
-            raise Exception( 'Scanning Error: Line #{} Idenifiers may not begin with numbers'.format( self.line_count ) )
+            self.logger.report_error( 'Scanning Error: Line #{} Invalid Char'.format( self.line_count ) )
+            sys.exit( 2 )
 
 
     def read( self ):
@@ -51,7 +52,6 @@ class Scanner:
             if len( split ) > 1:
                 # do stuff
                 new_parts = []
-                print( 'here' )
                 count = 0
                 for s in split:
                     if count % 2 == 0:
@@ -71,7 +71,7 @@ class Scanner:
                         for s in part:
                            parts.append( s ) 
                     else:
-                        parts.append( part )
+                        parts.append( part )           
             else:
                 line = line.lower()
                 line = line.strip()
@@ -153,4 +153,9 @@ class Scanner:
         for token in remove_tokens:
             self.token_list.remove( token )
         
+        for token in self.token_list:
+            if token.name == 'illegal':
+                self.logger.report_error( 'Invalid Character: ' + token.text, token.line_number )
+                sys.exit( 2 )
+
         return self.token_list

@@ -5,7 +5,7 @@
 # myparser.py
 
 # Imported libraries
-import re
+import re, sys
 
 # Imported file classes
 import tokens
@@ -36,7 +36,7 @@ class Parser:
             self.current_token = next( self.token_list )
             self.line_number = self.current_token.line_number
         except:
-            self.logger.report_error( 'Expected more tokens but found end of file' )
+            self.logger.report_error( 'Expected more tokens but found end of file', self.line_number )
             sys.exit( 2 )
 
     # Start to parse

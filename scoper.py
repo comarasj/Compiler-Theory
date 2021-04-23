@@ -87,11 +87,11 @@ class Scoper:
 
     def is_variable_in_current_scope( self, variable_name, global_flag ):
         if global_flag:
-            if variable_name in self.base_scope.procedures:
+            if variable_name in self.base_scope.variables:
                 return True
             return False
         else:
-            if variable_name in self.current_scope.procedures:
+            if variable_name in self.current_scope.variables:
                 return True
             return False
 
