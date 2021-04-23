@@ -46,7 +46,6 @@ if __name__ == '__main__':
 # -h              : OPTIONAL : indicates need for more help   #
 ###############################################################
     '''
-    print( argv )
     try:
         opts, args = getopt.getopt( argv, 'h:i:o:v', [ 'ifile=', 'ofile=' ] )
     except getopt.GetoptError:

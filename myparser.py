@@ -21,6 +21,7 @@ class Parser:
         self.scoper = Scoper( 'GLOBAL' )
         self.logger = logger
         self.logger.set_origin( 'Parser' )
+        self.line_number = 0
 
 
     def is_token_type( self, test_token ):
@@ -32,6 +33,7 @@ class Parser:
     def next_token( self ):
         try:
             self.current_token = next( self.token_list )
+            self.line_number = self.current_token.line_number
         except:
             self.logger.report_error( 'Expected more tokens but found end of file' )
             sys.exit( 2 )
@@ -39,8 +41,15 @@ class Parser:
     # Start to parse
     def parse( self ):
         self.next_token()
-        self.program()
+        if self.program():
+            print( 'Successful Parse!')
 
+
+    def resync( self, resync_type ):
+        if resync_type == 'prodecure':
+            self.logger.report_warning( 'Attempting to resync to end of procedure', self.line_number )
+            if self.is_token_type( tokens.t_end ):
+                pass 
 
     def program( self ):
         # Check program header
@@ -54,25 +63,29 @@ class Parser:
         
         # Check for period
         if not self.is_token_type( tokens.t_period ):
-            return False
-        print( 'Correct Program' )
+            self.logger.report_warning( 'Period not included at end of program', self.line_number )
+            # return False
+        self.logger.info( 'Correct Program', self.line_number )
         return True
 
 
     def program_header( self ):
         if not self.is_token_type( tokens.t_program ):
+            self.logger.report_error( 'Missing "program" keyword', self.line_number )
             return False
         self.next_token()
 
         if not self.identifier():
+            self.logger.report_error( 'Missing program identifier', self.line_number )
             return False
         self.next_token()
 
         if not self.is_token_type( tokens.t_is ):
+            self.logger.report_error( 'Missing "is" keyword', self.line_number )
             return False
         self.next_token()
 
-        print( 'Correct program header' )
+        self.logger.info( 'Correct program header', self.line_number )
         return True
 
     
@@ -87,18 +100,19 @@ class Parser:
                not self.is_token_type( tokens.t_float ) and 
                not self.is_token_type( tokens.t_string ) and 
                not self.is_token_type( tokens.t_bool ) ):
+            self.logger.report_error( 'Missing valid type mark', self.line_number )
             return False
         return True
     
 
     def bound( self ):
         if not self.is_token_type( tokens.t_number ):
-            self.logger.report_error( 'Invalid bound, must be number', self.current_token.line_number )
+            self.logger.report_error( 'Invalid bound, must be number', self.line_number )
             return False
         number_val = self.current_token.text
         if type( number_val ) is int and number_val >= 0:
             return True
-        self.logger.report_error( 'Invalid bound, must be positive integer', self.current_token.line_number )
+        self.logger.report_error( 'Invalid bound, must be positive integer', self.line_number )
         return False
 
 
@@ -109,6 +123,7 @@ class Parser:
 
         # Check for begin
         if not self.is_token_type( tokens.t_begin ):
+            self.logger.report_error( 'Missing "begin" keyword', self.line_number )
             return False
         self.next_token()
 
@@ -120,14 +135,16 @@ class Parser:
 
         # Check for end
         if not self.is_token_type( tokens.t_end ):
+            self.logger.report_error( 'Missing "end" keyword', self.line_number )
             return False
         self.next_token()
 
         # Check for program 
         if not self.is_token_type( tokens.t_program ):
+            self.logger.report_error( 'Missing "program" keyword', self.line_number )
             return False
         
-        print( 'Correct program body' )
+        self.logger.info( 'Correct program body', self.line_number )
         return True 
 
 
@@ -144,8 +161,12 @@ class Parser:
                 if not self.procedure_declaration( global_flag ):
                     # raise Exception( 'Parsing Error: Invalid Procedure Declaration' )
                     # # Try to resync
-                    return False
+                    self.logger.report_error( 'Invalid Procedure Declaration', self.line_number )
+
+                    self.resync( 'procedure' )
+                    # return False
                 if not self.is_token_type( tokens.t_semicolon ):
+                    self.logger.report_error( 'Missing ";"', self.line_number )
                     return False
                 self.scoper.go_to_parent_scope()
                 self.next_token()
@@ -155,8 +176,10 @@ class Parser:
                 if not self.variable_declaration( global_flag, False ):
                     # raise Exception( 'Parsing Error: Invalid Variable Declaration' )
                     # # Try to resync
+                    self.logger.report_error( 'Invalid Variable Declaration', self.line_number )
                     return False
                 if not self.is_token_type( tokens.t_semicolon ):
+                    self.logger.report_error( 'Missing ";"', self.line_number )
                     return False
                 self.next_token()
             else:
@@ -177,16 +200,18 @@ class Parser:
 
     def procedure_header( self, global_flag ):
         if not self.is_token_type( tokens.t_procedure ):
+            self.logger.report_error( 'Missing "procedure" keyword', self.line_number )
             return False
 
         self.next_token()
         if not self.identifier():
+            self.logger.report_error( 'Missing procedure identifier', self.line_number )
             return False
         procedure_name = self.current_token.text
 
         # Scope Checking
         if self.scoper.is_procedure_in_current_scope( procedure_name, global_flag ):
-            self.logger.report_error( '{} already exists in scope'.format( procedure_name ), self.current_token.line_number )
+            self.logger.report_error( '{} already exists in scope'.format( procedure_name ), self.line_number )
             return False
 
         self.scoper.create_new_scope( procedure_name )        
@@ -194,6 +219,7 @@ class Parser:
         self.next_token()
 
         if not self.is_token_type( tokens.t_colon ):
+            self.logger.report_error( 'Missing ":"', self.line_number )
             return False
         
         self.next_token()
@@ -207,6 +233,7 @@ class Parser:
         self.next_token()
 
         if not self.is_token_type( tokens.t_lparen ):
+            self.logger.report_error( 'Missing "("', self.line_number )
             return False
 
         self.next_token()
@@ -215,9 +242,10 @@ class Parser:
             return False
 
         if not self.is_token_type( tokens.t_rparen ):
+            self.logger.report_error( 'Missing ")"', self.line_number )
             return False
 
-        print( 'Correct procedure header' )
+        self.logger.info( 'Correct procedure header', self.line_number )
         return True
 
 
@@ -227,20 +255,23 @@ class Parser:
             return False
         # Check for begin
         if not self.is_token_type( tokens.t_begin ):
+            self.logger.report_error( 'Missing "begin" keyword', self.line_number )
             return False
         self.next_token()
         # Check for valid code
         if not self.valid_code():
             return False
         if not self.is_token_type( tokens.t_end ):
+            self.logger.report_error( 'Missing "end" keyword', self.line_number )
             return False
         self.next_token()
 
         if not self.is_token_type( tokens.t_procedure ):
+            self.logger.report_error( 'Missing "procedure" keyword', self.line_number )
             return False
         self.next_token()
         
-        print( 'Correct procedure body' )
+        self.logger.info( 'Correct procedure body', self.line_number )
         return True        
 
 
@@ -262,18 +293,21 @@ class Parser:
 
     def variable_declaration( self, global_flag, input_param_flag, procedure_name=None, param_idx=None ):
         if not self.is_token_type( tokens.t_variable ):
+            self.logger.report_error( 'Missing "variable" keyword', self.line_number )
             return False
         self.next_token()
         if not self.identifier():
+            self.logger.report_error( 'Missing variable identifier', self.line_number )
             return False
         var_name = self.current_token.text
         if self.scoper.is_variable_in_current_scope( var_name, global_flag ):
-            self.logger.report_error( '{} already exists in scope'.format( var_name ), self.current_token.line_number )
+            self.logger.report_error( '{} already exists in scope'.format( var_name ), self.line_number )
             return False
 
         self.next_token()
 
         if not self.is_token_type( tokens.t_colon ):
+            self.logger.report_error( 'Missing ":"', self.line_number )
             return False
         self.next_token()
         if not self.type_mark():
@@ -308,6 +342,7 @@ class Parser:
     def valid_code( self ):
         while self.statement():
             if not self.is_token_type( tokens.t_semicolon ):
+                self.logger.report_error( 'Missing ";"', self.line_number )
                 return False
             self.next_token()
         return True
@@ -325,6 +360,7 @@ class Parser:
         if not self.destination( dest ):
             return False
         if not self.is_token_type( tokens.t_assignment ):
+            self.logger.report_error( 'Missing ":="', self.line_number )
             return False
         self.next_token()
 
@@ -334,7 +370,7 @@ class Parser:
         
         # Type check for compatibility
         if not self.type_check_compatibility( dest, expr ):
-            self.logger.report_error( 'Invalid assignment, types do not match', self.current_token.line_number )
+            self.logger.report_error( 'Invalid assignment, types do not match', self.line_number )
             return False
 
         return True
@@ -342,9 +378,11 @@ class Parser:
 
     def if_statement( self ):
         if not self.is_token_type( tokens.t_if ):
+            # self.logger.report_error( 'Missing "if" keyword', self.line_number )
             return False
         self.next_token()
         if not self.is_token_type( tokens.t_lparen ):
+            self.logger.report_error( 'Missing "("', self.line_number )
             return False
         self.next_token()
 
@@ -354,13 +392,15 @@ class Parser:
         
         # Type check expression resolves to bool
         # if expr.type != 'INT' and expr.type != 'BOOL':
-        #     self.logger.report_error( 'If statement expression did not resolve to a boolean', self.current_token.line_number )
+        #     self.logger.report_error( 'If statement expression did not resolve to a boolean', self.line_number )
         #     return False
 
         if not self.is_token_type( tokens.t_rparen ):
+            self.logger.report_error( 'Missing ")"', self.line_number )
             return False
         self.next_token()
         if not self.is_token_type( tokens.t_then ):
+            self.logger.report_error( 'Missing "then" keyword', self.line_number )
             return False
         self.next_token()
         if not self.valid_code():
@@ -372,11 +412,13 @@ class Parser:
                 return False
 
         if not self.is_token_type( tokens.t_end ):
+            self.logger.report_error( 'Missing "end" keyword', self.line_number )
             return False
         
         self.next_token()
 
         if not self.is_token_type( tokens.t_if ):
+            self.logger.report_error( 'Missing "if" keyword', self.line_number )
             return False
 
         self.next_token()
@@ -386,14 +428,17 @@ class Parser:
 
     def loop_statment( self ):
         if not self.is_token_type( tokens.t_for ):
+            # self.logger.report_error( 'Missing "for" keyword', self.line_number )
             return False
         self.next_token()
         if not self.is_token_type( tokens.t_lparen ):
+            self.logger.report_error( 'Missing "("', self.line_number )
             return False
         self.next_token()
         if not self.assignment_statement():
             return False
         if not self.is_token_type( tokens.t_semicolon ):
+            self.logger.report_error( 'Missing ";"', self.line_number )
             return False
         self.next_token()
 
@@ -403,22 +448,25 @@ class Parser:
         
         # Type check expression resolves to bool
         if expr.type != 'INT' and expr.type != 'BOOL':
-            self.logger.report_error( 'Loop statement expression did not resolve to a boolean', self.current_token.line_number )
+            self.logger.report_error( 'Loop statement expression did not resolve to a boolean', self.line_number )
             return False
 
 
         if not self.is_token_type( tokens.t_rparen ):
+            self.logger.report_error( 'Missing ")"', self.line_number )
             return False
         self.next_token()
         if not self.valid_code():
             return False
 
         if not self.is_token_type( tokens.t_end ):
+            self.logger.report_error( 'Missing "end" keyword', self.line_number )
             return False
 
         self.next_token()
     
         if not self.is_token_type( tokens.t_for ):
+            self.logger.report_error( 'Missing "for" keyword', self.line_number )
             return False
         
         self.next_token()
@@ -428,6 +476,7 @@ class Parser:
     
     def return_statement( self ):
         if not self.is_token_type( tokens.t_return ):
+            # self.logger.report_error( 'Missing "return" keyword', self.line_number )
             return False
         self.next_token()
         
@@ -441,7 +490,7 @@ class Parser:
 
         # Type check that return is the same as procedure return
         if not self.type_check_compatibility( proc, expr ):
-            self.logger.report_error( 'Return type does not match procedure type', self.current_token.line_number )
+            self.logger.report_error( 'Return type does not match procedure type', self.line_number )
             return False
 
         return True
@@ -461,11 +510,11 @@ class Parser:
                 return False
             
             if not dest.is_array:
-                self.logger.report_error( 'Variable is not an array and cannot be indexed', self.current_token.line_number )
+                self.logger.report_error( 'Variable is not an array and cannot be indexed', self.line_number )
                 return False
 
             if idx.type != 'INT':
-                self.logger.report_error( 'Array must be indexed by an integer', self.current_token.line_number )
+                self.logger.report_error( 'Array must be indexed by an integer', self.line_number )
                 return False
 
 
@@ -482,7 +531,7 @@ class Parser:
             if not self.arithOp( expr ):
                 return False
             if expr.type != 'INT' and expr.type != 'BOOL':
-                self.logger.report_error( 'Not is only supported for bool and int', self.current_token.line_number )
+                self.logger.report_error( 'Not is only supported for bool and int', self.line_number )
         elif not self.arithOp( expr ):
             return False
 
@@ -615,10 +664,10 @@ class Parser:
             self.next_token()
             if name( factor ) or number( factor ):
                 if factor.type != 'INT' and factor.type != 'FLOAT':
-                    self.logger.report_error( 'Minus/negative operator only supported for numbers', self.current_token.line_number )
+                    self.logger.report_error( 'Minus/negative operator only supported for numbers', self.line_number )
                     return False
             else:
-                self.logger.report_error( 'Invalid minus/negative operator', self.current_token.line_number )
+                self.logger.report_error( 'Invalid minus/negative operator', self.line_number )
                 return False
             
             self.next_token()
@@ -645,7 +694,7 @@ class Parser:
         proc = self.scoper.is_procedure_in_scope( identifier_name )
         var = self.scoper.is_variable_in_scope( identifier_name )
         if not self.scoper.is_procedure_in_scope( identifier_name ) and not self.scoper.is_variable_in_scope( identifier_name ):
-            self.logger.report_error( '{} does not exist in scope'.format( identifier_name ), self.current_token.line_number )
+            self.logger.report_error( '{} does not exist in scope'.format( identifier_name ), self.line_number )
             return False
         identifier_type = ''
         if proc:
@@ -671,7 +720,7 @@ class Parser:
             return False
         return True
 
-    #TODO come back to me
+
     def argument_list( self, proc ):
         index = 0
         arg = Symbol()
@@ -681,13 +730,13 @@ class Parser:
 
         if not self.expression( arg ):
             if len( procedure_args ) != 0:
-                self.logger.report_error( 'Too few procedure arguments provided', self.current_token.line_number )
+                self.logger.report_error( 'Too few procedure arguments provided', self.line_number )
             return False
 
         parameter_symbol = self.get_indexed_arg( procedure_args, index )
 
         if not self.type_check_compatibility( arg, parameter_symbol ):
-            self.logger.report_error( 'Provided procedure argument does not match defined procedure parameter type', self.current_token.line_number )
+            self.logger.report_error( 'Provided procedure argument does not match defined procedure parameter type', self.line_number )
             return False
 
         index = index + 1
@@ -696,23 +745,23 @@ class Parser:
             self.next_token()
             arg_p = Symbol()
             if not self.expression( arg_p ):
-                self.logger.report_error( 'Invalid argument expression', self.current_token.line_number )
+                self.logger.report_error( 'Invalid argument expression', self.line_number )
                 return False
             
             if index >= len( procedure_args ):
-                self.logger.report_error( 'Too many arguments provided', self.current_token.line_number )
+                self.logger.report_error( 'Too many arguments provided', self.line_number )
                 return False
             
             parameter_symbol = self.get_indexed_arg( procedure_args, index )
 
             if not self.type_check_compatibility( arg_p, parameter_symbol ):
-                self.logger.report_error( 'Provided procedure argument does not match defined procedure parameter type', self.current_token.line_number )
+                self.logger.report_error( 'Provided procedure argument does not match defined procedure parameter type', self.line_number )
                 return False
 
             index = index + 1
 
         if index != len( procedure_args ):
-            self.logger.report_error( 'Too few procedure arguments provided', self.current_token.line_number )
+            self.logger.report_error( 'Too few procedure arguments provided', self.line_number )
 
         return True
 
@@ -724,11 +773,11 @@ class Parser:
                 return False
 
             if not iden.is_array:
-                self.logger.report_error( 'Variable is not an array and cannot be indexed', self.current_token.line_number )
+                self.logger.report_error( 'Variable is not an array and cannot be indexed', self.line_number )
                 return False
 
             if idx.type != 'INT':
-                self.logger.report_error( 'Array must be indexed by an integer', self.current_token.line_number )
+                self.logger.report_error( 'Array must be indexed by an integer', self.line_number )
                 return False
 
             if not self.is_token_type( tokens.t_rbracket ):
@@ -749,7 +798,6 @@ class Parser:
     
 
     def string( self, string ):
-        #TODO come back to me
         if not self.is_token_type( tokens.t_quote ):
             return False
         self.next_token()
@@ -770,27 +818,25 @@ class Parser:
 
         elif ( lhs.is_array and not lhs.is_indexed_array ) and ( rhs.is_array and not rhs.is_indexed_array ):
             if lhs.array_length != rhs.array_length:
-                self.logger.report_error( 'When doing operations on arrays, array must be the same size', self.current_token.line_number )
+                self.logger.report_error( 'When doing operations on arrays, array must be the same size', self.line_number )
                 return False
-        self.logger.report_error( 'Invalid expression types', self.current_token.line_number )
+        self.logger.report_error( 'Invalid expression types', self.line_number )
         return False
 
 
     def type_check_arithmetic( self, lhs, rhs, operator ):
         if ( lhs.type != 'INT' and lhs.type != 'FLOAT' ) or ( rhs.type != 'INT' and rhs.type != 'FLOAT' ):
-            # They are not corrent type
+            # They are not corret type
             return False
         elif ( lhs.is_array and not lhs.is_indexed_array ) and ( rhs.is_array and not rhs.is_indexed_array ):
             if lhs.array_length != rhs.array_length:
-                self.logger.report_error( 'When doing operations on arrays, array must be the same size', self.current_token.line_number )
+                self.logger.report_error( 'When doing operations on arrays, array must be the same size', self.line_number )
                 return False
         elif lhs.type == 'INT' and rhs.type == 'FLOAT':
             # valid
-            # Code gen stuff
             pass
         elif lhs.type == 'FLOAT' and rhs.type == 'INT':
             # valid
-            # Code gen stuff
             pass
         # Both are the same type
         return True
@@ -800,18 +846,18 @@ class Parser:
         if dest.is_array or expr.is_array:
             if dest.is_array and expr.is_array:
                 if dest.is_indexed_array != expr.is_indexed_array:
-                    self.logger.report_error( 'Arrays must be indexed or unindexed', self.current_token.line_number )
+                    self.logger.report_error( 'Arrays must be indexed or unindexed', self.line_number )
                     return False
                 elif not dest.is_indexed_array:
                     if dest.array_length != expr.array_length:
-                        self.logger.report_error( 'Arrays must be same length', self.current_token.line_number )
+                        self.logger.report_error( 'Arrays must be same length', self.line_number )
                         return False
                 else:
                     if dest.type != expr.type:
                         return False
             else:
                 if ( dest.is_array and not dest.is_indexed_array ) or ( expr.is_array and not expr.is_indexed_array ):
-                    self.logger.report_error( 'Array must be indexed', self.current_token.line_number )
+                    self.logger.report_error( 'Array must be indexed', self.line_number )
                     return False
             return True
 
@@ -838,7 +884,7 @@ class Parser:
     def type_check_relation( self, lhs, rhs, op ):
         if ( lhs.is_array and not lhs.is_indexed_array ) and ( rhs.is_array and not rhs.is_indexed_array ):
             if lhs.array_length != rhs.array_length:
-                self.logger.report_error( 'When doing operations on arrays, array must be the same size', self.current_token.line_number )
+                self.logger.report_error( 'When doing operations on arrays, array must be the same size', self.line_number )
                 return False
         elif lhs.type == 'INT':
             if rhs.type == 'BOOl':
@@ -860,7 +906,7 @@ class Parser:
         elif lhs.type == 'STRING':
             if rhs.type == 'STRING' and ( op == '==' or op == '!=' ):
                 return True
-        self.logger.report_error( 'Types incompatible for relations', self.current_token.line_number )
+        self.logger.report_error( 'Types incompatible for relations', self.line_number )
         return False
 
 
