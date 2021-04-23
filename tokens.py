@@ -122,26 +122,26 @@ operator_tokens = [
 
 built_in_functions = {
     'getbool': { 
-        'type': 'bool', 
-        'input_params': {}
+        'procedure_type': 'bool', 
+        'input_parameters': {}
     },
     'getinteger': { 
-        'type': 'integer', 
-        'input_params': {}
+        'procedure_type': 'integer', 
+        'input_parameters': {}
     },
     'getfloat': { 
-        'type': 'float', 
-        'input_params': {}
+        'procedure_type': 'float', 
+        'input_parameters': {}
     },
     'getstring': { 
-        'type': 'string', 
-        'input_params': {}
+        'procedure_type': 'string', 
+        'input_parameters': {}
     },
     'putbool': { 
-        'type': 'bool', 
-        'input_params': { 
+        'procedure_type': 'bool', 
+        'input_parameters': { 
             'value': { 
-                'type': 'bool', 
+                'variable_type': 'bool', 
                 'is_array': False, 
                 'array_length': 0,
                 'index': 0
@@ -149,10 +149,10 @@ built_in_functions = {
         }
     },
     'putinteger': { 
-        'type': 'bool', 
-        'input_params': { 
+        'procedure_type': 'bool', 
+        'input_parameters': { 
             'value': { 
-                'type': 'integer', 
+                'variable_type': 'integer', 
                 'is_array': False, 
                 'array_length': 0,
                 'index': 0
@@ -160,10 +160,10 @@ built_in_functions = {
         }
     },
     'putfloat': { 
-        'type': 'bool', 
-        'input_params': { 
+        'procedure_type': 'bool', 
+        'input_parameters': { 
             'value': { 
-                'type': 'float', 
+                'variable_type': 'float', 
                 'is_array': False, 
                 'array_length': 0,
                 'index': 0
@@ -171,10 +171,10 @@ built_in_functions = {
         }
     },
     'putstring': { 
-        'type': 'bool', 
-        'input_params': { 
+        'procedure_type': 'bool', 
+        'input_parameters': { 
             'value': { 
-                'type': 'string', 
+                'variable_type': 'string', 
                 'is_array': False, 
                 'array_length': 0,
                 'index': 0
@@ -182,10 +182,10 @@ built_in_functions = {
         }
     },
     'sqrt': { 
-        'type': 'float', 
-        'input_params': { 
+        'procedure_type': 'float', 
+        'input_parameters': { 
             'value': { 
-                'type': 'integer', 
+                'variable_type': 'integer', 
                 'is_array': False, 
                 'array_length': 0,
                 'index': 0
