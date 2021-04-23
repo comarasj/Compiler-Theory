@@ -1,4 +1,8 @@
-
+# Stephen Comarata
+# EECE 5183 - 001 Compiler Theory 
+# This program is the scope class for the compiler project 
+#
+# scope.py
 
 
 class Symbol:

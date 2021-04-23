@@ -5,7 +5,7 @@
 # scanner.py
 
 # Imported libraries
-import re
+import re, sys
 
 # Imported file classes
 from tokens import operator_tokens, keyword_tokens, Token, t_comment, t_comment_start, t_comment_end, t_period, t_program, t_quote
@@ -38,7 +38,11 @@ class Scanner:
 
     def read( self ):
         # open input file
-        file_object = open( self.input_file, 'r' )
+        try:
+            file_object = open( self.input_file, 'r' )
+        except:
+            self.logger.report_error( 'Could not open ' + self.input_file + ' ', 0 )
+            sys.exit( 2 )
         lines = file_object.readlines()
         for line in lines:
             self.line_count = self.line_count + 1
@@ -149,12 +153,4 @@ class Scanner:
         for token in remove_tokens:
             self.token_list.remove( token )
         
-        '''
-        quoted_str = []
-        str_tokens = []
-        for token in self.token_list:
-            if token.text == t_quote.text:
-        '''
-
-
         return self.token_list
