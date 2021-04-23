@@ -22,6 +22,7 @@ class Parser:
         self.logger = logger
         self.logger.set_origin( 'Parser' )
         self.line_number = 0
+        self.resync_flag = False
 
 
     def is_token_type( self, test_token ):
@@ -42,14 +43,29 @@ class Parser:
     def parse( self ):
         self.next_token()
         if self.program():
-            print( 'Successful Parse!')
+            if self.resync_flag:
+                print( 'Parse completed with errors please address' )
+            else:
+                print( 'Successful Parse!')
 
 
     def resync( self, resync_type ):
-        if resync_type == 'prodecure':
+        self.resync_flag = True
+        if resync_type == 'procedure':
             self.logger.report_warning( 'Attempting to resync to end of procedure', self.line_number )
-            if self.is_token_type( tokens.t_end ):
-                pass 
+            while( not self.is_token_type( tokens.t_procedure ) ):
+                self.next_token()
+            if not self.is_token_type( tokens.t_procedure ):
+                self.logger.report_error( 'Could not resync to end of invalid procedure' )
+                return False
+            self.logger.report_warning( 'Resync successful', self.line_number )
+            return True
+        elif resync_type == 'variable':
+            self.logger.report_warning( 'Attempting to resync to next line', self.line_number )
+            while( not self.is_token_type( tokens.t_semicolon ) ):
+                self.next_token()
+            self.logger.report_warning( 'Resync successful', self.line_number )
+            return True
 
     def program( self ):
         # Check program header
@@ -159,12 +175,12 @@ class Parser:
             # Check for procedure
             if self.is_token_type( tokens.t_procedure ):
                 if not self.procedure_declaration( global_flag ):
-                    # raise Exception( 'Parsing Error: Invalid Procedure Declaration' )
                     # # Try to resync
                     self.logger.report_error( 'Invalid Procedure Declaration', self.line_number )
 
-                    self.resync( 'procedure' )
-                    # return False
+                    if not self.resync( 'procedure' ):
+                        return False
+                    self.next_token()
                 if not self.is_token_type( tokens.t_semicolon ):
                     self.logger.report_error( 'Missing ";"', self.line_number )
                     return False
@@ -174,10 +190,10 @@ class Parser:
             # Check for variables
             elif self.is_token_type( tokens.t_variable ):
                 if not self.variable_declaration( global_flag, False ):
-                    # raise Exception( 'Parsing Error: Invalid Variable Declaration' )
                     # # Try to resync
                     self.logger.report_error( 'Invalid Variable Declaration', self.line_number )
-                    return False
+                    if not self.resync( 'variable' ):
+                        return False
                 if not self.is_token_type( tokens.t_semicolon ):
                     self.logger.report_error( 'Missing ";"', self.line_number )
                     return False
